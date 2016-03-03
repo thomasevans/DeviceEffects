@@ -12,11 +12,18 @@ gps.db <- odbcConnectAccess2007('D:/Dropbox/tracking_db/murre_db/murre_db.accdb'
 
 # Get TDR deployment data (including file names)
 tdr.deployments <- sqlQuery(gps.db,
-                          query = "SELECT guillemots_GPS_TDR_deployments_TDR.TDR_deployment_id, guillemots_GPS_TDR_deployments_TDR.TDR_ID, guillemots_GPS_TDR_deployments_TDR.file_name, guillemots_GPS_TDR_events.ring_number
+                          query = "SELECT guillemots_GPS_TDR_deployments_TDR.TDR_deployment_id, guillemots_GPS_TDR_deployments_TDR.TDR_ID, guillemots_GPS_TDR_deployments_TDR.file_name, guillemots_GPS_TDR_events.ring_number, guillemots_GPS_TDR_events.date_time_cap_utc
 FROM guillemots_GPS_TDR_deployments_TDR INNER JOIN guillemots_GPS_TDR_events ON guillemots_GPS_TDR_deployments_TDR.GPS_TDR_event_id_ON = guillemots_GPS_TDR_events.GPS_TDR_event_id;
                           ",
                           as.is = TRUE)
+tdr.deployments2 <- sqlQuery(gps.db,
+                            query = "SELECT guillemots_GPS_TDR_deployments_TDR.TDR_deployment_id, guillemots_GPS_TDR_deployments_TDR.TDR_ID, guillemots_GPS_TDR_deployments_TDR.file_name, guillemots_GPS_TDR_events.ring_number, guillemots_GPS_TDR_events.date_time_cap_utc
+FROM guillemots_GPS_TDR_deployments_TDR INNER JOIN guillemots_GPS_TDR_events ON guillemots_GPS_TDR_deployments_TDR.GPS_TDR_event_id_OFF = guillemots_GPS_TDR_events.GPS_TDR_event_id;
+",
+                            as.is = TRUE)
 
+names(tdr.deployments)[5] <- "date_time_rel_utc_start"
+tdr.deployments$date_time_cap_utc_end <- tdr.deployments2$date_time_cap_utc
 
 
 # Get TDR data and assemble together -------
@@ -56,6 +63,14 @@ for(i in 1:n_files){
   # Pressure - base-line
   tdr.df$pressure_dBars_base <- tdr.df$pressure_dBars - median(tdr.df$pressure_dBars[tdr.df$pressure_dBars < 5])
   
+  
+  # Is tag deployed?
+  tdr.df$deployed <- (tdr.df$date_time < as.POSIXct(tdr.deployments$date_time_cap_utc[i], tz = "UTC")) &
+    (tdr.df$date_time > as.POSIXct(tdr.deployments$date_time_rel_utc_start[i], tz = "UTC"))
+#   summary(tdr.df$deployed)
+#   summary((tdr.df$date_time < as.POSIXct(tdr.deployments$date_time_cap_utc[i], tz = "UTC")))
+#   summary(tdr.df$date_time > as.POSIXct(tdr.deployments$date_time_rel_utc_start[i], tz = "UTC"))
+#   
   data.all.list[[i]] <- tdr.df
   
   
@@ -91,11 +106,13 @@ data.all.df <- do.call("rbind", data.all.list)
 # dif <- tdr.df$pressure_dBars_base-depth.new
 # 
 # hist(depth.new[dif > 0.4])
-
+str(data.all.df$deployed)
 # Export data table -----
 data.export <- data.all.df[,-c(2:3)]
 # data.export[1,]
 
+str(data.export)
+# names(sqlTypeInfo(gps.db))
 #will be neccessary to edit table in Access after to define data-types and primary keys and provide descriptions for each variable.
 sqlSave(gps.db, data.export,
         tablename = "guillemots_GPS_TDR_raw_tdr",
@@ -104,6 +121,6 @@ sqlSave(gps.db, data.export,
         test = FALSE, nastring = NULL,
         varTypes =  c(date_time = "datetime")
 )
-
+# ?sqlSave
 
 
