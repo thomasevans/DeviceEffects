@@ -31,7 +31,7 @@ tdr.deployments$date_time_cap_utc_end <- tdr.deployments2$date_time_cap_utc
 # For each tag, read in data
 n_files <- nrow(tdr.deployments)
 
-# i <- 1
+# i <- 6
 data.all.list <- list()
 
 for(i in 1:n_files){
@@ -47,6 +47,7 @@ for(i in 1:n_files){
                      "duration_s", "descent_dur_s", "bottom_dur_s",
                      "ascent_dur_s", "velo_down_ms", "velo_bot_ms",
                      "velo_up_ms", "depth_max_m", "depth_bot_min_m",
+                     "depth_bot_mean_m",
                      "depth_bot_med_m", "ignore_1", "depth_bot_sd_m",
                      "ignore_2", "ignore_3", "ignore_4", "ignore_5",
                      "ignore_6", "depth_mean_dive_m", "depth_integral_dive",
@@ -55,16 +56,18 @@ for(i in 1:n_files){
                      "ignore_9", "ignore_10", "temp_c_min", "temp_c_start",
                      "depth_integral_bottom", "ignore_11")
   
+  
   # drop columns we don't want
-  tdr.df <- tdr.df[,-c(16,18:22,25:26,32:33,37)]
+  tdr.df <- tdr.df[,-c(17,19:23,26:27,33:34,38,39:40)]
   
   # make date_time thing
   date_time_text <- paste(tdr.df$date, tdr.df$time, sep = " ")
   # head(date_time_text)
   
-  date_time <- as.POSIXct(date_time_text, tz = "UTC")
+  date_time <- as.POSIXct(date_time_text, tz = "UTC", format = "%d-%m-%Y %H:%M:%S")
+  # range(date_time)
   # head(date_time)
-  
+  # ?as.POSIXct
   tdr.df$date_time <- date_time
   
   # Add tdr_id, file_name, and ring_number columns
@@ -80,7 +83,7 @@ for(i in 1:n_files){
   # Is tag deployed?
   tdr.df$deployed <- (tdr.df$date_time < as.POSIXct(tdr.deployments$date_time_cap_utc[i], tz = "UTC")) &
     (tdr.df$date_time > as.POSIXct(tdr.deployments$date_time_rel_utc_start[i], tz = "UTC"))
-  #   summary(tdr.df$deployed)
+    # summary(tdr.df$deployed)
   #   summary((tdr.df$date_time < as.POSIXct(tdr.deployments$date_time_cap_utc[i], tz = "UTC")))
   #   summary(tdr.df$date_time > as.POSIXct(tdr.deployments$date_time_rel_utc_start[i], tz = "UTC"))
   #   
@@ -124,8 +127,10 @@ str(data.all.df$deployed)
 data.export <- data.all.df[,-c(2:3)]
 # data.export[1,]
 
+data.export$dive_id <- c(1:nrow(data.export))
+
 str(data.export)
-names(sqlTypeInfo(gps.db))
+# names(sqlTypeInfo(gps.db))
 #will be neccessary to edit table in Access after to define data-types and primary keys and provide descriptions for each variable.
 sqlSave(gps.db, data.export,
         tablename = "guillemots_GPS_TDR_dives",
@@ -136,4 +141,7 @@ sqlSave(gps.db, data.export,
 )
 # ?sqlSave
 
-
+# hist(data.export$depth_max_m[data.export$depth_max_m < 150], breaks = 40)
+# 
+# hist(data.export$depth_max_m[data.export$depth_max_m < 150], breaks = 200,
+#      xlim = c(0,20))
