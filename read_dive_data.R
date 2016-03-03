@@ -43,7 +43,20 @@ for(i in 1:n_files){
   tdr.df <- read.table(file.name, header = FALSE, skip = 4, sep = "\t")
   
   # name the data columns
-  names(tdr.df) <- c("rec_n", "date", "time", "pressure_dBars", "temp_C", "wet_dry")
+  names(tdr.df) <- c("rec_num", "date", "time", "shape", "pause_pre_s",
+                     "duration_s", "descent_dur_s", "bottom_dur_s",
+                     "ascent_dur_s", "velo_down_ms", "velo_bot_ms",
+                     "velo_up_ms", "depth_max_m", "depth_bot_min_m",
+                     "depth_bot_med_m", "ignore_1", "depth_bot_sd_m",
+                     "ignore_2", "ignore_3", "ignore_4", "ignore_5",
+                     "ignore_6", "depth_mean_dive_m", "depth_integral_dive",
+                     "ignore_7", "ignore_8", "temp_c_mean", "temp_c_bot_mean",
+                     "temp_c_bot_min", "temp_c_bot_max", "temp_c_depth_max",
+                     "ignore_9", "ignore_10", "temp_c_min", "temp_c_start",
+                     "depth_integral_bottom", "ignore_11")
+  
+  # drop columns we don't want
+  tdr.df <- tdr.df[,-c(16,18:22,25:26,32:33,37)]
   
   # make date_time thing
   date_time_text <- paste(tdr.df$date, tdr.df$time, sep = " ")
@@ -56,12 +69,12 @@ for(i in 1:n_files){
   
   # Add tdr_id, file_name, and ring_number columns
   tdr.df$ring_number <- tdr.deployments$ring_number[i]
-  tdr.df$file_name <- paste(tdr.deployments$file_name[i], ".csv", sep = "")
+  tdr.df$file_name <- paste(tdr.deployments$file_name[i], ".ex1", sep = "")
   tdr.df$TDR_ID <- tdr.deployments$TDR_ID[i]
   tdr.df$TDR_deployment_id <- tdr.deployments$TDR_deployment_id[i]
   
   # Pressure - base-line
-  tdr.df$pressure_dBars_base <- tdr.df$pressure_dBars - median(tdr.df$pressure_dBars[tdr.df$pressure_dBars < 5 & tdr.df$wet_dry == 0])
+  # tdr.df$pressure_dBars_base <- tdr.df$pressure_dBars - median(tdr.df$pressure_dBars[tdr.df$pressure_dBars < 5 & tdr.df$wet_dry == 0])
   
   
   # Is tag deployed?
@@ -115,7 +128,7 @@ str(data.export)
 names(sqlTypeInfo(gps.db))
 #will be neccessary to edit table in Access after to define data-types and primary keys and provide descriptions for each variable.
 sqlSave(gps.db, data.export,
-        tablename = "guillemots_GPS_TDR_raw_tdr",
+        tablename = "guillemots_GPS_TDR_dives",
         append = FALSE, rownames = FALSE, colnames = FALSE,
         verbose = FALSE, safer = TRUE, addPK = FALSE, fast = TRUE,
         test = FALSE, nastring = NULL,
