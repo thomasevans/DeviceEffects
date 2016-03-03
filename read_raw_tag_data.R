@@ -106,7 +106,7 @@ data.all.df <- do.call("rbind", data.all.list)
 # dif <- tdr.df$pressure_dBars_base-depth.new
 # 
 # hist(depth.new[dif > 0.4])
-str(data.all.df$deployed)
+# summary(data.all.df$deployed)
 # Export data table -----
 data.export <- data.all.df[,-c(2:3)]
 # data.export[1,]
