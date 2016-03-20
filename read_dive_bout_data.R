@@ -27,9 +27,6 @@ tdr.deployments$date_time_cap_utc_end <- tdr.deployments2$date_time_cap_utc
 
 
 # Get TDR data and assemble together -------
-# Tell where to find Java installation
-# Sys.setenv(JAVA_HOME='C:\\Program Files\\Java\\jre7') # for 64-bit version
-library("xlsx")
 
 # For each tag, read in data
 n_files <- nrow(tdr.deployments)
@@ -43,25 +40,29 @@ for(i in 1:n_files){
   file.name <- paste("D:/Dropbox/Guillemots/2015/TDR_data_processed/", tdr.deployments$file_name[i], "_Bout.xls", sep = "")
   
   # Read in file
-  tdr.df <- read.table(file.name, header = FALSE, skip = 4, sep = ",")
+  tdr.df <-read.table(file.name, header = FALSE, skip = 2, sep = "\t")
+
+  # drop columns we don't want
+  tdr.df <- tdr.df[,-c(5:9,24:34)]
   
   # name the data columns
-  names(tdr.df) <- c("rec_num", "date", "time", "shape", "pause_pre_s",
-                     "duration_s", "descent_dur_s", "bottom_dur_s",
-                     "ascent_dur_s", "velo_down_ms", "velo_bot_ms",
-                     "velo_up_ms", "depth_max_m", "depth_bot_min_m",
-                     "depth_bot_mean_m",
-                     "depth_bot_med_m", "ignore_1", "depth_bot_sd_m",
-                     "ignore_2", "ignore_3", "ignore_4", "ignore_5",
-                     "ignore_6", "depth_mean_dive_m", "depth_integral_dive",
-                     "ignore_7", "ignore_8", "temp_c_mean", "temp_c_bot_mean",
-                     "temp_c_bot_min", "temp_c_bot_max", "temp_c_depth_max",
-                     "ignore_9", "ignore_10", "temp_c_min", "temp_c_start",
-                     "depth_integral_bottom", "ignore_11")
+  names(tdr.df) <- c("rec_num", "date", "time", "dives_n",
+                     "dives_per_h", "bout_duration_s",
+                     "bottom_time_duration_tot_s",
+                     "bottom_time_prop_of_bout",
+                     "dive_duration_max_s",
+                     "dive_duration_mean_s",
+                     "depth_bout_max_m",
+                     "depth_dive_max_mean_m",
+                     "mean_depth_m",
+                     "bottom_depth_mean_m",
+                     "dive_time_tot_s",
+                     "integral_m_h",
+                     "ignore_1",
+                     "diving_efficiency_s")
   
   
-  # drop columns we don't want
-  tdr.df <- tdr.df[,-c(17,19:23,26:27,33:34,38,39:40)]
+
   
   # make date_time thing
   date_time_text <- paste(tdr.df$date, tdr.df$time, sep = " ")
@@ -75,7 +76,7 @@ for(i in 1:n_files){
   
   # Add tdr_id, file_name, and ring_number columns
   tdr.df$ring_number <- tdr.deployments$ring_number[i]
-  tdr.df$file_name <- paste(tdr.deployments$file_name[i], ".ex1", sep = "")
+  tdr.df$file_name <- paste(tdr.deployments$file_name[i], "_Bout.xls", sep = "")
   tdr.df$TDR_ID <- tdr.deployments$TDR_ID[i]
   tdr.df$TDR_deployment_id <- tdr.deployments$TDR_deployment_id[i]
   
@@ -125,7 +126,13 @@ data.all.df <- do.call("rbind", data.all.list)
 # dif <- tdr.df$pressure_dBars_base-depth.new
 # 
 # hist(depth.new[dif > 0.4])
+
+
 summary(data.all.df$deployed)
+
+
+
+
 # Export data table -----
 data.export <- data.all.df[,-c(2:3)]
 # data.export[1,]
@@ -136,15 +143,9 @@ str(data.export)
 # names(sqlTypeInfo(gps.db))
 #will be neccessary to edit table in Access after to define data-types and primary keys and provide descriptions for each variable.
 sqlSave(gps.db, data.export,
-        tablename = "guillemots_GPS_TDR_dives",
+        tablename = "guillemots_GPS_TDR_bouts",
         append = FALSE, rownames = FALSE, colnames = FALSE,
         verbose = FALSE, safer = TRUE, addPK = FALSE, fast = TRUE,
         test = FALSE, nastring = NULL,
         varTypes =  c(date_time = "datetime")
 )
-# ?sqlSave
-
-# hist(data.export$depth_max_m[data.export$depth_max_m < 150], breaks = 40)
-# 
-# hist(data.export$depth_max_m[data.export$depth_max_m < 150], breaks = 200,
-#      xlim = c(0,20))
