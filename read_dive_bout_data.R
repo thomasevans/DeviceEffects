@@ -31,7 +31,7 @@ tdr.deployments$date_time_cap_utc_end <- tdr.deployments2$date_time_cap_utc
 # For each tag, read in data
 n_files <- nrow(tdr.deployments)
 
-i <- 6
+# i <- 6
 data.all.list <- list()
 
 for(i in 1:n_files){
@@ -137,7 +137,7 @@ summary(data.all.df$deployed)
 data.export <- data.all.df[,-c(2:3)]
 # data.export[1,]
 
-data.export$dive_id <- c(1:nrow(data.export))
+data.export$bout_id <- c(1:nrow(data.export))
 
 str(data.export)
 # names(sqlTypeInfo(gps.db))
@@ -145,7 +145,7 @@ str(data.export)
 sqlSave(gps.db, data.export,
         tablename = "guillemots_GPS_TDR_bouts",
         append = FALSE, rownames = FALSE, colnames = FALSE,
-        verbose = FALSE, safer = TRUE, addPK = FALSE, fast = TRUE,
+        verbose = FALSE, safer = TRUE, addPK = FALSE, fast = FALSE,
         test = FALSE, nastring = NULL,
         varTypes =  c(date_time = "datetime")
 )
