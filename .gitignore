@@ -14,3 +14,6 @@ vignettes/*.pdf
 .httr-oauth
 .Rproj.user
 dive_stats_summary.RData
+Dive_par_plots.pdf
+# Ignore PDF files
+*.pdf
