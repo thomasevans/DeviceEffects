@@ -211,5 +211,3 @@ sqlSave(gps.db, stats.df,
 
 save(stats.df, file = "dive_stats_summary.RData")
 
-
-# Next write plotting script (ggplots of with/ without GPS for different variables)
