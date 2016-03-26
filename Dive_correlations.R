@@ -63,14 +63,64 @@ p
 
 # Dive duration vs. pdi
 hist(dives.comb$pdi, xlim = c(0,1000), breaks = 1000)
-dives.comb.f <- dives.comb[dives.comb$pdi<1000,]
-p <- ggplot(data = dives.comb.f,aes(x = duration_s, y = pdi, col = factor(type)))
+dives.comb.f <- dives.comb[dives.comb$pdi<200,]
+p <- ggplot(data = dives.comb.f,aes(x = pdi, y = duration_s, col = factor(type)))
 p <- p + geom_point(alpha=0.4)
-# p <- p + stat_smooth()
-p <- p + ylim(0, 250)
+p <- p + stat_smooth()
+# p <- p + xlim(0, 250)
 p
 
 
+# dives.comb.f <- dives.comb[dives.comb$pdi<200,]
+p <- ggplot(data = dives.comb.f,aes(x = depth_max_m, y = pdi, col = factor(type)))
+p <- p + geom_point(alpha=0.4)
+p <- p + stat_smooth()
+# p <- p + xlim(0, 250)
+# p + scale_y_log10()
+p
+
+
+# Bottom time vs. dive time
+p <- ggplot(data = dives.comb,aes(x = duration_s, y = bottom_dur_s, col = factor(type)))
+p <- p + geom_point(alpha=0.4)
+p <- p + stat_smooth()
+# p <- p + xlim(0, 250)
+# p + scale_y_log10()
+p
+
+
+pdf("dive_velocity_max_depth.pdf")
+# Velo_down vs. depth
+p <- ggplot(data = dives.comb,aes(x = depth_max_m, y = velo_down_ms, col = factor(type)))
+p <- p + geom_point(alpha=0.2)
+p <- p + stat_smooth()
+p <- p + ylim(0, 2)
+# p + scale_y_log10()
+p
+
+# Velo_up vs. depth
+p <- ggplot(data = dives.comb,aes(x = depth_max_m, y = -velo_up_ms, col = factor(type)))
+p <- p + geom_point(alpha=0.3)
+p <- p + stat_smooth()
+p <- p + ylim(0, 2)
+# p + scale_y_log10()
+p
+
+
+# Histogram of depth
+ggplot(dives.comb, aes(depth_max_m, fill = type)) +
+  geom_density(adjust=1/2, alpha = 0.3)
+# ?geom_density
+
+dev.off()
+
+
+shallow.dives <- dives.comb[dives.comb$depth_max_m<15,]
+summary(as.factor(shallow.dives$ring_number.x))
+
+# Histogram of duration
+ggplot(dives.comb, aes(duration_s, fill = type)) +
+  geom_density(adjust=1/2, alpha = 0.3)
 
 # Calculate pdf minimma -----
 
@@ -135,3 +185,58 @@ p <- p + ylim(0, 100)
 p
 
 
+
+
+
+
+
+
+
+
+
+# Plotting dive duration against pdi with histograms ------
+
+# Based on this SO answer: http://stackoverflow.com/a/17372093/1172358
+dives.comb.f <- dives.comb[dives.comb$pdi<200,]
+p <- ggplot(data = dives.comb.f,aes(x = pdi, y = duration_s, col = factor(type)))
+
+
+
+p1 <- ggplot(DF,aes(x=x,y=y,colour=factor(group))) + geom_point() +
+  scale_x_continuous(expand=c(0.02,0)) +
+  scale_y_continuous(expand=c(0.02,0)) +
+  theme_bw() +
+  theme(legend.position="none",plot.margin=unit(c(0,0,0,0),"points"))
+
+theme0 <- function(...) theme( legend.position = "none",
+                               panel.background = element_blank(),
+                               panel.grid.major = element_blank(),
+                               panel.grid.minor = element_blank(),
+                               panel.margin = unit(0,"null"),
+                               axis.ticks = element_blank(),
+                               axis.text.x = element_blank(),
+                               axis.text.y = element_blank(),
+                               axis.title.x = element_blank(),
+                               axis.title.y = element_blank(),
+                               axis.ticks.length = unit(0,"null"),
+                               axis.ticks.margin = unit(0,"null"),
+                               panel.border=element_rect(color=NA),...)
+
+p2 <- ggplot(DF,aes(x=x,colour=factor(group),fill=factor(group))) + 
+  geom_density(alpha=0.5) + 
+  scale_x_continuous(breaks=NULL,expand=c(0.02,0)) +
+  scale_y_continuous(breaks=NULL,expand=c(0.00,0)) +
+  theme_bw() +
+  theme0(plot.margin = unit(c(1,0,-0.48,2.2),"lines")) 
+
+p3 <- ggplot(DF,aes(x=y,colour=factor(group),fill=factor(group))) + 
+  geom_density(alpha=0.5) + 
+  coord_flip()  + 
+  scale_x_continuous(labels = NULL,breaks=NULL,expand=c(0.02,0)) +
+  scale_y_continuous(labels = NULL,breaks=NULL,expand=c(0.00,0)) +
+  theme_bw() +
+  theme0(plot.margin = unit(c(0,1,1.2,-0.48),"lines"))
+
+grid.arrange(arrangeGrob(p2,ncol=2,widths=c(3,1)),
+             arrangeGrob(p1,p3,ncol=2,widths=c(3,1)),
+             heights=c(1,3))
