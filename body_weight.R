@@ -240,6 +240,8 @@ p
 # Plots to export ------
  
  plot_indivual_date 
+ draw_plot_label("A", x = 0, y = 1, hjust = -0.5, vjust = 1.5,
+                 size = 16, fontface = "bold")
  plot_mass_deployment
  plot_mass_start
  
@@ -249,26 +251,42 @@ p
  library(scales)
  
  # ?pdf
- pdf("filename.pdf", paper = "a4r",pointsize = 10)
- 
- # Move to a new page
- grid.newpage()
+ pdf("weight_change2.pdf",width = 8, height = 7,  pointsize = 10)
 
- # Create layout : nrow = 2, ncol = 2
- pushViewport(viewport(layout = grid.layout(2, 2)))
+ # win.metafile(filename = "weight_change.wmf", width = 10, height = 7)
+ png(filename = "weight_change2.png",
+     width = 8, height = 7, units = "in", pointsize = 10,
+     bg = "white", res = 600, family = "", restoreConsole = TRUE,
+     type = "cairo-png")
  
- # A helper function to define a region on the layout
- define_region <- function(row, col){
-   viewport(layout.pos.row = row, layout.pos.col = col)
- } 
- 
- # Arrange the plots
- print(plot_indivual_date, vp=define_region(1, 1:2))
- print((plot_mass_deployment + theme(legend.position="none")), vp = define_region(2, 1))
- print((ggdraw(switch_axis_position((plot_mass_start+ theme(legend.position="none")), 'y'))), vp = define_region(2, 2))
+#  # Move to a new page
+#  grid.newpage()
+# 
+#  # Create layout : nrow = 2, ncol = 2
+#  pushViewport(viewport(layout = grid.layout(2, 2)))
+#  
+#  # A helper function to define a region on the layout
+#  define_region <- function(row, col){
+#    viewport(layout.pos.row = row, layout.pos.col = col)
+#  } 
+#  
+#  # Arrange the plots
+#  print(plot_indivual_date, vp=define_region(1, 1:2))
+#  print((plot_mass_deployment + theme(legend.position="none")), vp = define_region(2, 1))
+#  print((ggdraw(switch_axis_position((plot_mass_start+ theme(legend.position="none")), 'y'))), vp = define_region(2, 2))
 
+ ggdraw() +
+   draw_plot(plot_indivual_date, 0, .5, 1, .5) +
+   draw_plot((plot_mass_deployment + theme(legend.position="none")), 0, 0, .5, .5) +
+   draw_plot((ggdraw(switch_axis_position((plot_mass_start+ theme(legend.position="none")), 'y'))), .5, 0, .5, .5) +
+   draw_plot_label(c("A", "B", "C"), c(0, 0, 0.5), c(1, 0.5, 0.5), size = 15)
+ 
   dev.off()
   
+  
+  
+
+  # ?ggdraw
  
 #  xlab = expression("Dives per bout (N)   "~1^st~" deployment"),
 #  ylab = expression(Delta~~"Mass per day (g/day)",
