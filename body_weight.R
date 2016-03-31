@@ -50,8 +50,11 @@ tag.events$days_sinse_previous[tag.events$GPS_TDR_event == 2] <- tag.events$date
 
 tag.events$days_sinse_previous[tag.events$GPS_TDR_event == 3] <- tag.events$date_time_rel_utc[tag.events$GPS_TDR_event == 3] - tag.events$date_time_rel_utc[tag.events$GPS_TDR_event == 2 & tag.events$GPS_TDR_order != "Control"]
 
-
-
+tag.events$type_prev <- "Control"
+tag.events$type_prev[tag.events$GPS_TDR_event == 2 & tag.events$GPS_TDR_order == "GPS_first"] <- "GPS"
+tag.events$type_prev[tag.events$GPS_TDR_event == 3 & tag.events$GPS_TDR_order == "GPS_first"] <- "TDR"
+tag.events$type_prev[tag.events$GPS_TDR_event == 2 & tag.events$GPS_TDR_order == "TDR_first"] <- "TDR"
+tag.events$type_prev[tag.events$GPS_TDR_event == 3 & tag.events$GPS_TDR_order == "TDR_first"] <- "GPS"
 
 tag.events$days_sinse_start <- NULL
 
@@ -88,8 +91,8 @@ tag.events$GPS_TDR_event <- as.factor(tag.events$GPS_TDR_event)
 
 tag.events$GPS_TDR_order <- factor(tag.events$GPS_TDR_order,
                                    levels = levels(tag.events$GPS_TDR_order)[c(2,3,1)])
-tag.events$GPS_TDR_order <- factor(tag.events$GPS_TDR_order,
-                                   levels = c("+G1", "+G2", "C"))
+tag.events$GPS_TDR_order2 <- tag.events$GPS_TDR_order
+levels(tag.events$GPS_TDR_order2) <-  c("+G1", "+G2", "C")
 # Make an initial plot
 p <- ggplot(tag.events, aes(GPS_TDR_event, mass))
 p <- p + geom_boxplot()
@@ -134,8 +137,8 @@ weight.segments.df <- merge(weight.segments.df, dcast(tag.events, formula = ring
                             value.var = "date_time_rel_utc"), by = "ring_number")
 names(weight.segments.df) <- c("ring_number", "mass.1", "mass.2", "mass.3",
                                "date.1", "date.2", "date.3")
-weight.segments.df <- merge(weight.segments.df, tag.events[tag.events$GPS_TDR_event == 1,c(4,9,20)], by = "ring_number")
-weight.segments.df <- merge(weight.segments.df, tag.events[tag.events$GPS_TDR_event == 2,c(4,20)], by = "ring_number")
+weight.segments.df <- merge(weight.segments.df, tag.events[tag.events$GPS_TDR_event == 1,c(4,19,21)], by = "ring_number")
+weight.segments.df <- merge(weight.segments.df, tag.events[tag.events$GPS_TDR_event == 2,c(4,21)], by = "ring_number")
 names(weight.segments.df)[9] <- "Deployment_type"
 
 weight.segments.df$Deployment_type <- as.factor(weight.segments.df$Deployment_type)
@@ -146,33 +149,34 @@ weight.segments.df$Deployment_type <- factor(weight.segments.df$Deployment_type,
 
 
 # Actual mass date
-p <- ggplot(tag.events, aes(date_time_rel_utc, mass, fill=factor(GPS_TDR_order,labels=c("+G1","+G2","C")) , shape=GPS_TDR_order)) +
+p <- ggplot(tag.events, aes(date_time_rel_utc, mass, colour = GPS_TDR_order2, shape=GPS_TDR_order2)) +
   # geom_boxplot(outlier.size=0, alpha = 0.5) +
 #   geom_line(aes(date_time_rel_utc  ,mass, lty = GPS_TDR_order,
 #                 group = ring_number, colour = GPS_TDR_order), lwd = 1.5, alpha = 0.3)+
-  geom_point(aes(date_time_rel_utc,mass, colour = GPS_TDR_order),
+  geom_point(aes(date_time_rel_utc, mass),
              alpha=0.8,
              size=3,
-             show_guide=TRUE) +
+             show.legend =TRUE) +
   geom_segment(aes(x = as.POSIXct(date.1, origin="1970-01-01", tz = "UTC"),
                    y = mass.1,
                    xend = as.POSIXct(date.2, origin="1970-01-01", tz = "UTC"),
-                   yend = mass.2, linetype = Deployment_type,
-                   col = GPS_TDR_order), lwd = 1.5, alpha = 0.6, data = weight.segments.df) +
+                   yend = mass.2, linetype = Deployment_type), lwd = 1.5, alpha = 0.6,
+               data = weight.segments.df, show.legend =TRUE) +
   geom_segment(aes(x = as.POSIXct(date.2, origin="1970-01-01", tz = "UTC"),
                    y = mass.2,
                    xend = as.POSIXct(date.3, origin="1970-01-01", tz = "UTC"),
-                   yend = mass.3, linetype  = type.y,
-                   col = GPS_TDR_order), lwd = 1.5, alpha = 0.6, data = weight.segments.df) +
+                   yend = mass.3, linetype  = type.y), lwd = 1.5, alpha = 0.6,
+               data = weight.segments.df, show.legend =FALSE) +
   ylim(790,980) +
   theme_bw()
-p <- p  + labs(list(title = "Individual mass changes", x = "Date (day of June)", y =  "Mass (g)", fill="Treatment"))
-p <- p + scale_fill_manual(values=col_3) + scale_colour_manual(values=col_3)
+p <- p  + scale_colour_manual(values=col_3)
 p <- p + scale_x_datetime(breaks = date_breaks("1 days"), labels = date_format("%d"))
 # p <- p + theme(panel.grid.minor = element_line(colour = "light grey"))
+p <- p  + labs(list(title = "Individual mass changes", x = "Date (day of June)", y =  "Mass (g)", shape = "Group", col = "Group", fill = "Treatment"))
+# p + geom_text(aes(label = "Treatment"))
 plot_indivual_date <- p
 p
-
+# ?labs
 # ?scale_x_continuous
 
 # Change in mass sinse last event
@@ -206,6 +210,32 @@ p <- p + scale_fill_manual(values=col_3) + scale_colour_manual(values=col_3)
 p
 plot_mass_deployment <- p
 
+
+
+# by treatment  # Needs some fixing!!
+tag.events2 <- tag.events[tag.events$GPS_TDR_event != 1,]
+p <- ggplot(tag.events2, aes(type_prev, weight_change_previous/days_sinse_previous, fill = GPS_TDR_order, shape=GPS_TDR_order)) +
+  geom_boxplot(outlier.size=0, alpha = 0.5) +
+  geom_line(aes(as.numeric(GPS_TDR_event) + adjusted - 1 ,
+                weight_change_previous/days_sinse_previous,
+                group = ring_number, colour = GPS_TDR_order),
+            lwd = 1.5, alpha = 0.3)+
+  geom_point(aes((GPS_TDR_event) ,
+                 weight_change_previous/days_sinse_previous, colour = GPS_TDR_order),
+             alpha=0.8,
+             size=3,
+             show_guide=FALSE) +
+  theme_bw()
+p <- p  + labs(list(title = "Mass change during deployment", x = "Deployment event number", y =  expression(Delta~~"Mass per day (g/day)")))
+p <- p + scale_fill_manual(values=col_3) + scale_colour_manual(values=col_3)
+p
+plot_mass_deployment <- p
+
+
+
+
+
+
 # Change in mass sinse start
 p <- ggplot(tag.events2, aes(GPS_TDR_event, mass_change_start, fill = GPS_TDR_order)) +
   geom_boxplot(outlier.size=0, alpha = 0.5) +
@@ -220,43 +250,55 @@ p <- p  + labs(list(title = "Mass change from start", x = "Deployment event numb
 p <- p + scale_fill_manual(values=col_3) + scale_colour_manual(values=col_3)
 p
 
+tag.events2$mass_change_start_day <- tag.events2$mass_change_start/tag.events2$days_sinse_start
 # Change in mass sinse start/ day
- p <- ggplot(tag.events2, aes(GPS_TDR_event, mass_change_start/days_sinse_start, fill = GPS_TDR_order, shape=GPS_TDR_order)) +
+ p <- ggplot(tag.events2, aes(GPS_TDR_event, mass_change_start_day, fill = GPS_TDR_order, shape=GPS_TDR_order)) +
   geom_boxplot(outlier.size=0, alpha = 0.5) +
-  geom_line(aes(as.numeric(GPS_TDR_event) + adjusted - 1 , mass_change_start/days_sinse_start,
+   theme(text =element_text(debug = FALSE, margin =margin() ))+
+  geom_line(aes(as.numeric(GPS_TDR_event) + adjusted - 1 , mass_change_start_day,
                 group = ring_number, colour = GPS_TDR_order), lwd = 1.5, alpha = 0.3)+
-  geom_point(aes(as.numeric(GPS_TDR_event) + adjusted - 1 ,mass_change_start/days_sinse_start, colour = GPS_TDR_order),
+  geom_point(aes(as.numeric(GPS_TDR_event) + adjusted - 1 ,mass_change_start_day, colour = GPS_TDR_order),
              alpha=0.8,
              size=3,
-             show_guide=FALSE) +
+             show.legend = FALSE) +
   theme_bw()
  p <- p  + labs(list(title = "Mass change from start", x = "Deployment event number", y =  expression(Delta~~"Mass per day (g/day)")))
  p <- p + scale_fill_manual(values=col_3) + scale_colour_manual(values=col_3)
  plot_mass_start <- p
- 
+ # p <- p + theme(axis.title.x=element_blank(), axis.title.y=element_text(size=0))
 
+ switch_axis_position(p, axis = "y")
+ # ?Ops.unit
  
  # Mass on first tagging occassion ----
  first.tags <- tag.events[tag.events$GPS_TDR_event == 1,]
- first.tags.out <- first.tags[-1,]
  # first.tags$GPS_TDR_order <- factor(first.tags$GPS_TDR_order,
                                     # levels = levels(first.tags$GPS_TDR_order)[c(3,2,1)])
- p <- ggplot(first.tags, aes(date_time_rel_utc, mass)) +
+ 
+ first.tags$days_june1 <- as.numeric(difftime(first.tags$date_time_rel_utc, as.POSIXct("2015-06-01 00:01", tz = "UTC")))
+ first.tags.out <- first.tags[-1,]
+ 
+ 
+ p <- ggplot(first.tags, aes(days_june1, mass)) +
    # geom_boxplot(outlier.size=0, alpha = 0.5) +
    #   geom_line(aes(date_time_rel_utc  ,mass, lty = GPS_TDR_order,
    #                 group = ring_number, colour = GPS_TDR_order), lwd = 1.5, alpha = 0.3)+
-   geom_point(aes(date_time_rel_utc,mass, colour = GPS_TDR_order, shape=GPS_TDR_order),
+   geom_point(aes(days_june1,mass, colour = GPS_TDR_order2, shape=GPS_TDR_order2),
               alpha=0.8,
               size=3,
-              show_guide=FALSE) +
+              show.legend = TRUE) +
    geom_smooth(method = "lm", se = FALSE, lwd = 1, col = "dark grey") +
    geom_smooth(data = first.tags.out, method = "lm", se = FALSE, lwd = 1, col = "red")
  
  p <- p + theme_bw()
- p <- p  + labs(list(title = "Mass at first capture", x = "Date", y =  "Mass (g)"))
+ p <- p  + labs(list(title = "Mass at first capture", x = "Days since 1st June", y =  "Mass (g)", shape = "Group", col = "Group"))
  p <- p + scale_fill_manual(values=col_3) + scale_colour_manual(values=col_3)
+ p <- p + scale_x_continuous(breaks = 1:100)
+ # p <- p + labs(list(title = "Individual mass changes", x = "Date (day of June)", y =  "Mass (g)", shape = "Group", col = "Group", fill = "Treatment"))
  # ?geom_line
  plot_mass_first_cap <- p
+ p
+ 
  ggsave(filename = "mass_at_first_cap_01.png", width = 6, height = 4)
  
 # Plots to export ------
@@ -278,10 +320,10 @@ p
  library(scales)
  
  # ?pdf
- pdf("weight_change3.pdf",width = 8, height = 7,  pointsize = 10)
+ pdf("weight_change4.pdf",width = 8, height = 7,  pointsize = 10)
 
  # win.metafile(filename = "weight_change.wmf", width = 10, height = 7)
- png(filename = "weight_change3.png",
+ png(filename = "weight_change4.png",
      width = 8, height = 7, units = "in", pointsize = 10,
      bg = "white", res = 600, family = "", restoreConsole = TRUE,
      type = "cairo-png")
@@ -301,11 +343,18 @@ p
 #  print(plot_indivual_date, vp=define_region(1, 1:2))
 #  print((plot_mass_deployment + theme(legend.position="none")), vp = define_region(2, 1))
 #  print((ggdraw(switch_axis_position((plot_mass_start+ theme(legend.position="none")), 'y'))), vp = define_region(2, 2))
-
+#  plot_mass_start2 <- plot_mass_start + 
+#    theme(axis.title.x=element_blank(), axis.title.y=element_text(size=0))
+ # str(tag.events)
+ # ggdraw(switch_axis_position((plot_mass_start+ theme(legend.position="none")), 'y'))
+ # switch_axis_position((plot_mass_start+ theme(legend.position="none")), 'y')
+#  str(plot_mass_start)
+ 
+#  ?switch_axis_position
  ggdraw() +
    draw_plot(plot_indivual_date, 0, .5, 1, .5) +
    draw_plot((plot_mass_deployment + theme(legend.position="none")), 0, 0, .5, .5) +
-   draw_plot((ggdraw(switch_axis_position((plot_mass_start+ theme(legend.position="none")), 'y'))), .5, 0, .5, .5) +
+   draw_plot(ggdraw(switch_axis_position((plot_mass_start+ theme(legend.position="none")), 'y')), .5, 0, .5, .5) +
    draw_plot_label(c("A", "B", "C"), c(0, 0, 0.5), c(1, 0.5, 0.5), size = 15)
  
   dev.off()
@@ -357,7 +406,47 @@ drop1(mod, test = "Chisq")
 
 
 # Redo stats ----
+# Compare control birds weight loss to zero (one-sample t-test) ----
+weight.change <- tag.events$weight_change_previous/tag.events$days_sinse_previous
+weight.change.controls <- weight.change[tag.events$GPS_TDR_event == 2 & tag.events$GPS_TDR_order2 == "C"]
+t.test(weight.change.controls)
+# NS
+# data:  weight.change.controls
+# t = -0.51831, df = 4, p-value = 0.6316
+# alternative hypothesis: true mean is not equal to 0
+# 95 percent confidence interval:
+#   -9.586995  6.570659
+# sample estimates:
+#   mean of x 
+# -1.508168 
+
+
+
+# Does mass decline at first capture accross period? -----
+mass.1 <- tag.events$mass[tag.events$GPS_TDR_event == 1]
+group <- tag.events$GPS_TDR_order2[tag.events$GPS_TDR_event == 1]
+date_tagged <- tag.events$date_time_rel_utc[tag.events$GPS_TDR_event == 1]
+
+days.1june <- difftime(date_tagged, as.POSIXct("2015-06-01 00:00", tz = "UTC"))
+
+mod01 <- lm(mass.1~days.1june)
+summary(mod01)
+
+# Without outlier point
+mod02 <- lm(mass.1[-1]~days.1june[-1])
+summary(mod02)
+
+
+
+# Compare mass loss per day between with and without GPS ----
+
+
+
+
 # Get data into correct format (to avoid confusion!)
+
+
+
 
 # Compare mass change per day for GPS/ TDR birds only (2nd and 3rd captures)
 # Paired test
