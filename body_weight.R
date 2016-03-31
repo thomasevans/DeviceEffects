@@ -250,7 +250,10 @@ p <- p  + labs(list(title = "Mass change from start", x = "Deployment event numb
 p <- p + scale_fill_manual(values=col_3) + scale_colour_manual(values=col_3)
 p
 
+
+
 tag.events2$mass_change_start_day <- tag.events2$mass_change_start/tag.events2$days_sinse_start
+
 # Change in mass sinse start/ day
  p <- ggplot(tag.events2, aes(GPS_TDR_event, mass_change_start_day, fill = GPS_TDR_order, shape=GPS_TDR_order)) +
   geom_boxplot(outlier.size=0, alpha = 0.5) +
@@ -267,8 +270,130 @@ tag.events2$mass_change_start_day <- tag.events2$mass_change_start/tag.events2$d
  plot_mass_start <- p
  # p <- p + theme(axis.title.x=element_blank(), axis.title.y=element_text(size=0))
 
- switch_axis_position(p, axis = "y")
- # ?Ops.unit
+ 
+ 
+ # Change in mass per day as percentage of body mass at start ----
+ mass_start_df <- tag.events[tag.events$GPS_TDR_event == 1,c(4,7)]
+ tag.events <- merge(tag.events, mass_start_df, by = "ring_number")
+ names(tag.events)[7] <- "mass"
+ names(tag.events)[ncol(tag.events)] <- "mass_start"
+ 
+ # library(lme4)
+ tag.events$perc_mass_loss_day_previous <- tag.events$weight_change_previous/tag.events$days_sinse_previous/tag.events$mass_start*100
+ 
+ tag.events$perc_mass_change_start <- tag.events$mass_change_start/tag.events$mass_start*100
+ 
+ 
+ tag.events2 <- tag.events[tag.events$GPS_TDR_event != 1,]
+ 
+ # Relative to start of each deployment 
+ p <- ggplot(tag.events2, aes(GPS_TDR_event, perc_mass_loss_day_previous, fill = GPS_TDR_order, shape=GPS_TDR_order)) +
+   geom_boxplot(outlier.size=0, alpha = 0.5) +
+   theme(text =element_text(debug = FALSE, margin =margin() ))+
+   geom_line(aes(as.numeric(GPS_TDR_event) + adjusted - 1 , perc_mass_loss_day_previous,
+                 group = ring_number, colour = GPS_TDR_order), lwd = 1.5, alpha = 0.3)+
+   geom_point(aes(as.numeric(GPS_TDR_event) + adjusted - 1 ,perc_mass_loss_day_previous, colour = GPS_TDR_order),
+              alpha=0.8,
+              size=3,
+              show.legend = FALSE) +
+   theme_bw()
+ p <- p  + labs(list(title = "Mass change during deployment", x = "Deployment event number", y =  expression(Delta~~"Mass (% of start mass/day)")))
+ p <- p + scale_fill_manual(values=col_3) + scale_colour_manual(values=col_3)
+ p
+ plot_mass_dep_perc <- p
+ # p <- p + theme(axis.title.x=element_blank(), axis.title.y=element_text(size=0))
+ 
+ 
+ 
+ # Relative to start of each deployment 
+ p <- ggplot(tag.events2, aes(GPS_TDR_event, perc_mass_loss_day_previous, fill = GPS_TDR_order, shape=GPS_TDR_order)) +
+   geom_boxplot(outlier.size=0, alpha = 0.5) +
+   theme(text =element_text(debug = FALSE, margin =margin() ))+
+   geom_line(aes(as.numeric(GPS_TDR_event) + adjusted - 1 , perc_mass_loss_day_previous,
+                 group = ring_number, colour = GPS_TDR_order), lwd = 1.5, alpha = 0.3)+
+   geom_point(aes(as.numeric(GPS_TDR_event) + adjusted - 1 ,perc_mass_loss_day_previous, colour = GPS_TDR_order),
+              alpha=0.8,
+              size=3,
+              show.legend = FALSE) +
+   theme_bw()
+ p <- p  + labs(list(title = "Mass change during deployment", x = "Deployment event number", y =  expression(Delta~~"Mass (% of start mass/day)")))
+ p <- p + scale_fill_manual(values=col_3) + scale_colour_manual(values=col_3)
+ p
+ plot_mass_dep_perc <- p
+ 
+ 
+ # By deployment type ---
+ as.numeric(as.factor(tag.events2$type_prev))
+ tag.events2$adjusted2 <- 0
+ 
+ tag.events2$adjusted2[tag.events2$GPS_TDR_order2 == "+G1"] <- -0.19
+ tag.events2$adjusted2[tag.events2$GPS_TDR_order2 == "+G2"] <- 0.19
+ 
+ tag.events2$type_prev[tag.events2$type_prev == "TDR"] <- "-G"
+ tag.events2$type_prev[tag.events2$type_prev == "GPS"] <- "+G"
+ tag.events2$type_prev[tag.events2$type_prev == "Control"] <- "C"
+ 
+ 
+ # Relative to start of each deployment 
+ p <- ggplot(tag.events2, aes(as.factor(type_prev), perc_mass_loss_day_previous, fill = GPS_TDR_order2, shape=GPS_TDR_order2)) +
+   geom_boxplot(outlier.size=0, alpha = 0.5) +
+   geom_line(aes((as.numeric(as.factor(type_prev)) + adjusted2 ) , perc_mass_loss_day_previous,
+                 group = ring_number, colour = GPS_TDR_order), lwd = 1.5, alpha = 0.3)+
+   geom_point(aes((as.numeric(as.factor(type_prev)) + adjusted2)  ,perc_mass_loss_day_previous, colour = GPS_TDR_order),
+              alpha=0.8,
+              size=3,
+              show.legend = FALSE) +
+   theme_bw()
+ p <- p  + labs(list(title = "Mass change during deployment", x = "Deployment type", y =  expression(Delta~~"Mass (% of start mass/day)")))
+ p <- p + scale_fill_manual(values=col_3) + scale_colour_manual(values=col_3)
+ p
+ plot_mass_dep_perc <- p
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ p <- ggplot(tag.events2, aes(as.factor(GPS_TDR_event), perc_mass_change_start, fill = GPS_TDR_order2, shape=GPS_TDR_order2)) +
+   geom_boxplot(outlier.size=0, alpha = 0.5) +
+   geom_line(aes(((as.numeric(GPS_TDR_event) + adjusted -1) ) , perc_mass_change_start,
+                 group = ring_number, colour = GPS_TDR_order), lwd = 1.5, alpha = 0.3)+
+   geom_point(aes(((as.numeric(GPS_TDR_event)  + adjusted + -1) )  ,perc_mass_change_start, colour = GPS_TDR_order),
+              alpha=0.8,
+              size=3,
+              show.legend = FALSE) +
+   theme_bw()
+ p <- p  + labs(list(title = "Mass change from 1st capture", x = "Capture event", y =  expression(Delta~~"Mass from start (%)")))
+ p <- p + scale_fill_manual(values=col_3) + scale_colour_manual(values=col_3)
+ p
+ plot_mass_perc_original <- p
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ # Relative to start
+ p <- ggplot(tag.events2, aes(GPS_TDR_event, perc_mass_loss_day_start, fill = GPS_TDR_order, shape=GPS_TDR_order)) +
+   geom_boxplot(outlier.size=0, alpha = 0.5) +
+   theme(text =element_text(debug = FALSE, margin =margin() ))+
+   geom_line(aes(as.numeric(GPS_TDR_event) + adjusted - 1 , perc_mass_loss_day_start,
+                 group = ring_number, colour = GPS_TDR_order), lwd = 1.5, alpha = 0.3)+
+   geom_point(aes(as.numeric(GPS_TDR_event) + adjusted - 1 ,perc_mass_loss_day_start, colour = GPS_TDR_order),
+              alpha=0.8,
+              size=3,
+              show.legend = FALSE) +
+   theme_bw()
+ p <- p  + labs(list(title = "Mass change from first capture", x = "Deployment event number", y =  expression(Delta~~"Mass (% of start mass/day)")))
+ p <- p + scale_fill_manual(values=col_3) + scale_colour_manual(values=col_3)
+ p
+ plot_mass_start_perc <- p
+ 
  
  # Mass on first tagging occassion ----
  first.tags <- tag.events[tag.events$GPS_TDR_event == 1,]
@@ -320,10 +445,10 @@ tag.events2$mass_change_start_day <- tag.events2$mass_change_start/tag.events2$d
  library(scales)
  
  # ?pdf
- pdf("weight_change4.pdf",width = 8, height = 7,  pointsize = 10)
+ pdf("weight_change6.pdf",width = 8, height = 7,  pointsize = 10)
 
  # win.metafile(filename = "weight_change.wmf", width = 10, height = 7)
- png(filename = "weight_change4.png",
+ png(filename = "weight_change6.png",
      width = 8, height = 7, units = "in", pointsize = 10,
      bg = "white", res = 600, family = "", restoreConsole = TRUE,
      type = "cairo-png")
@@ -351,11 +476,18 @@ tag.events2$mass_change_start_day <- tag.events2$mass_change_start/tag.events2$d
 #  str(plot_mass_start)
  
 #  ?switch_axis_position
+#  ggdraw() +
+#    draw_plot(plot_indivual_date, 0, .5, 1, .5) +
+#    draw_plot((plot_mass_perc_original + theme(legend.position="none")), 0, 0, .5, .5) +
+#    draw_plot(ggdraw(switch_axis_position((plot_mass_dep_perc + theme(legend.position="none")), 'y')), .5, 0, .5, .5) +
+#    draw_plot_label(c("A", "B", "C"), c(0, 0, 0.5), c(1, 0.5, 0.5), size = 15)
+#  
  ggdraw() +
    draw_plot(plot_indivual_date, 0, .5, 1, .5) +
-   draw_plot((plot_mass_deployment + theme(legend.position="none")), 0, 0, .5, .5) +
-   draw_plot(ggdraw(switch_axis_position((plot_mass_start+ theme(legend.position="none")), 'y')), .5, 0, .5, .5) +
+   draw_plot((plot_mass_perc_original + theme(legend.position="none")), 0, 0, .5, .5) +
+   draw_plot((plot_mass_dep_perc + theme(legend.position="none")), .5, 0, .5, .5) +
    draw_plot_label(c("A", "B", "C"), c(0, 0, 0.5), c(1, 0.5, 0.5), size = 15)
+ 
  
   dev.off()
   
@@ -398,7 +530,7 @@ summary(aov(weight_change_previous/days_sinse_previous~GPS_TDR_order,tag.events[
 summary(lme(weight_change_previous/days_sinse_previous ~ GPS_TDR_order + type, data = tag.events[tag.events$GPS_TDR_order != "Control" & tag.events$GPS_TDR_event != 1,], random = ~ 1 | ring_number))
 
 library(lme4)
-mod <- lmer(weight_change_previous/days_sinse_previous ~ GPS_TDR_order + type + (1|ring_number), tag.events[tag.events$GPS_TDR_order != "Control" & tag.events$GPS_TDR_event != 1,])
+mod <- lmer(weight_change_previous/days_sinse_previous ~ GPS_TDR_order + type_prev + (1|ring_number), tag.events[tag.events$GPS_TDR_order != "Control" & tag.events$GPS_TDR_event != 1,])
 anova(mod)
 summary(mod)
 drop1(mod, test = "Chisq")
@@ -435,6 +567,23 @@ summary(mod01)
 # Without outlier point
 mod02 <- lm(mass.1[-1]~days.1june[-1])
 summary(mod02)
+
+
+
+mass_start_df <- tag.events[tag.events$GPS_TDR_event == 1,c(4,7)]
+tag.events <- merge(tag.events, mass_start_df, by = "ring_number")
+names(tag.events)[7] <- "mass"
+names(tag.events)[ncol(tag.events)] <- "mass_start"
+
+library(lme4)
+tag.events$perc_mass_loss_day_previous <- tag.events$weight_change_previous/tag.events$days_sinse_previous/tag.events$mass_start*100
+
+mod <- lmer(perc_mass_loss_day_previous ~ GPS_TDR_order + type_prev + (1|ring_number), tag.events[tag.events$GPS_TDR_order != "Control" & tag.events$GPS_TDR_event != 1,])
+anova(mod)
+summary(mod)
+drop1(mod, test = "Chisq")
+
+
 
 
 
