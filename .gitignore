@@ -17,3 +17,5 @@ dive_stats_summary.RData
 Dive_par_plots.pdf
 # Ignore PDF files
 *.pdf
+mass_at_first_cap_01.png
+*.png
