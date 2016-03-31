@@ -72,9 +72,9 @@ tag.events$days_sinse_start[tag.events$GPS_TDR_event == 3] <- tag.events$date_ti
 col_3 <- c("#1b9e77","#d95f02", "#7570b3")
 
 # Some base plots ------
-boxplot(tag.events$mass_change_start~tag.events$GPS_TDR_event+tag.events$GPS_TDR_order)
-
-boxplot(tag.events$weight_change_previous~tag.events$GPS_TDR_event+tag.events$GPS_TDR_order)
+# boxplot(tag.events$mass_change_start~tag.events$GPS_TDR_event+tag.events$GPS_TDR_order)
+# 
+# boxplot(tag.events$weight_change_previous~tag.events$GPS_TDR_event+tag.events$GPS_TDR_order)
 
 
 # Make some plots with ggplot -------
@@ -88,8 +88,8 @@ tag.events$GPS_TDR_event <- as.factor(tag.events$GPS_TDR_event)
 
 tag.events$GPS_TDR_order <- factor(tag.events$GPS_TDR_order,
                                    levels = levels(tag.events$GPS_TDR_order)[c(2,3,1)])
-
-
+tag.events$GPS_TDR_order <- factor(tag.events$GPS_TDR_order,
+                                   levels = c("+G1", "+G2", "C"))
 # Make an initial plot
 p <- ggplot(tag.events, aes(GPS_TDR_event, mass))
 p <- p + geom_boxplot()
@@ -146,14 +146,14 @@ weight.segments.df$Deployment_type <- factor(weight.segments.df$Deployment_type,
 
 
 # Actual mass date
-p <- ggplot(tag.events, aes(date_time_rel_utc, mass, fill = GPS_TDR_order)) +
+p <- ggplot(tag.events, aes(date_time_rel_utc, mass, fill=factor(GPS_TDR_order,labels=c("+G1","+G2","C")) , shape=GPS_TDR_order)) +
   # geom_boxplot(outlier.size=0, alpha = 0.5) +
 #   geom_line(aes(date_time_rel_utc  ,mass, lty = GPS_TDR_order,
 #                 group = ring_number, colour = GPS_TDR_order), lwd = 1.5, alpha = 0.3)+
   geom_point(aes(date_time_rel_utc,mass, colour = GPS_TDR_order),
              alpha=0.8,
              size=3,
-             show_guide=FALSE) +
+             show_guide=TRUE) +
   geom_segment(aes(x = as.POSIXct(date.1, origin="1970-01-01", tz = "UTC"),
                    y = mass.1,
                    xend = as.POSIXct(date.2, origin="1970-01-01", tz = "UTC"),
@@ -166,7 +166,7 @@ p <- ggplot(tag.events, aes(date_time_rel_utc, mass, fill = GPS_TDR_order)) +
                    col = GPS_TDR_order), lwd = 1.5, alpha = 0.6, data = weight.segments.df) +
   ylim(790,980) +
   theme_bw()
-p <- p  + labs(list(title = "Individual mass changes", x = "Date (day of June)", y =  "Mass (g)"))
+p <- p  + labs(list(title = "Individual mass changes", x = "Date (day of June)", y =  "Mass (g)", fill="Treatment"))
 p <- p + scale_fill_manual(values=col_3) + scale_colour_manual(values=col_3)
 p <- p + scale_x_datetime(breaks = date_breaks("1 days"), labels = date_format("%d"))
 # p <- p + theme(panel.grid.minor = element_line(colour = "light grey"))
@@ -192,7 +192,7 @@ p
 
 # Change in mass sinse last event/ day
 tag.events2 <- tag.events[tag.events$GPS_TDR_event != 1,]
-p <- ggplot(tag.events2, aes(GPS_TDR_event, weight_change_previous/days_sinse_previous, fill = GPS_TDR_order)) +
+p <- ggplot(tag.events2, aes(GPS_TDR_event, weight_change_previous/days_sinse_previous, fill = GPS_TDR_order, shape=GPS_TDR_order)) +
   geom_boxplot(outlier.size=0, alpha = 0.5) +
   geom_line(aes(as.numeric(GPS_TDR_event) + adjusted - 1 , weight_change_previous/days_sinse_previous,
                 group = ring_number, colour = GPS_TDR_order), lwd = 1.5, alpha = 0.3)+
@@ -221,7 +221,7 @@ p <- p + scale_fill_manual(values=col_3) + scale_colour_manual(values=col_3)
 p
 
 # Change in mass sinse start/ day
- p <- ggplot(tag.events2, aes(GPS_TDR_event, mass_change_start/days_sinse_start, fill = GPS_TDR_order)) +
+ p <- ggplot(tag.events2, aes(GPS_TDR_event, mass_change_start/days_sinse_start, fill = GPS_TDR_order, shape=GPS_TDR_order)) +
   geom_boxplot(outlier.size=0, alpha = 0.5) +
   geom_line(aes(as.numeric(GPS_TDR_event) + adjusted - 1 , mass_change_start/days_sinse_start,
                 group = ring_number, colour = GPS_TDR_order), lwd = 1.5, alpha = 0.3)+
@@ -236,14 +236,41 @@ p
  
 
  
+ # Mass on first tagging occassion ----
+ first.tags <- tag.events[tag.events$GPS_TDR_event == 1,]
+ first.tags.out <- first.tags[-1,]
+ # first.tags$GPS_TDR_order <- factor(first.tags$GPS_TDR_order,
+                                    # levels = levels(first.tags$GPS_TDR_order)[c(3,2,1)])
+ p <- ggplot(first.tags, aes(date_time_rel_utc, mass)) +
+   # geom_boxplot(outlier.size=0, alpha = 0.5) +
+   #   geom_line(aes(date_time_rel_utc  ,mass, lty = GPS_TDR_order,
+   #                 group = ring_number, colour = GPS_TDR_order), lwd = 1.5, alpha = 0.3)+
+   geom_point(aes(date_time_rel_utc,mass, colour = GPS_TDR_order, shape=GPS_TDR_order),
+              alpha=0.8,
+              size=3,
+              show_guide=FALSE) +
+   geom_smooth(method = "lm", se = FALSE, lwd = 1, col = "dark grey") +
+   geom_smooth(data = first.tags.out, method = "lm", se = FALSE, lwd = 1, col = "red")
+ 
+ p <- p + theme_bw()
+ p <- p  + labs(list(title = "Mass at first capture", x = "Date", y =  "Mass (g)"))
+ p <- p + scale_fill_manual(values=col_3) + scale_colour_manual(values=col_3)
+ # ?geom_line
+ plot_mass_first_cap <- p
+ ggsave(filename = "mass_at_first_cap_01.png", width = 6, height = 4)
  
 # Plots to export ------
  
- plot_indivual_date 
- draw_plot_label("A", x = 0, y = 1, hjust = -0.5, vjust = 1.5,
-                 size = 16, fontface = "bold")
- plot_mass_deployment
- plot_mass_start
+#  plot_indivual_date 
+#  
+#  plot_indivual_date_trend <- plot_indivual_date + 
+#    geom_smooth(data= first.tags, method = "lm", se = FALSE, lwd = 1, col = "dark grey") +
+#    geom_smooth(data = first.tags.out, method = "lm", se = FALSE, lwd = 1, col = "red")
+#  
+#  draw_plot_label("A", x = 0, y = 1, hjust = -0.5, vjust = 1.5,
+#                  size = 16, fontface = "bold")
+#  plot_mass_deployment
+#  plot_mass_start
  
  library(gridExtra)
   library(grid)
@@ -251,10 +278,10 @@ p
  library(scales)
  
  # ?pdf
- pdf("weight_change2.pdf",width = 8, height = 7,  pointsize = 10)
+ pdf("weight_change3.pdf",width = 8, height = 7,  pointsize = 10)
 
  # win.metafile(filename = "weight_change.wmf", width = 10, height = 7)
- png(filename = "weight_change2.png",
+ png(filename = "weight_change3.png",
      width = 8, height = 7, units = "in", pointsize = 10,
      bg = "white", res = 600, family = "", restoreConsole = TRUE,
      type = "cairo-png")
