@@ -92,6 +92,7 @@ tag.events$GPS_TDR_event <- as.factor(tag.events$GPS_TDR_event)
 tag.events$GPS_TDR_order <- factor(tag.events$GPS_TDR_order,
                                    levels = levels(tag.events$GPS_TDR_order)[c(2,3,1)])
 tag.events$GPS_TDR_order2 <- tag.events$GPS_TDR_order
+
 levels(tag.events$GPS_TDR_order2) <-  c("+G1", "+G2", "C")
 # Make an initial plot
 p <- ggplot(tag.events, aes(GPS_TDR_event, mass))
@@ -137,8 +138,8 @@ weight.segments.df <- merge(weight.segments.df, dcast(tag.events, formula = ring
                             value.var = "date_time_rel_utc"), by = "ring_number")
 names(weight.segments.df) <- c("ring_number", "mass.1", "mass.2", "mass.3",
                                "date.1", "date.2", "date.3")
-weight.segments.df <- merge(weight.segments.df, tag.events[tag.events$GPS_TDR_event == 1,c(1,20,22)], by = "ring_number")
-weight.segments.df <- merge(weight.segments.df, tag.events[tag.events$GPS_TDR_event == 2,c(1,22)], by = "ring_number")
+weight.segments.df <- merge(weight.segments.df, tag.events[tag.events$GPS_TDR_event == 1,c(4,20,22)], by = "ring_number")
+weight.segments.df <- merge(weight.segments.df, tag.events[tag.events$GPS_TDR_event == 2,c(4,22)], by = "ring_number")
 names(weight.segments.df)[9] <- "Deployment_type"
 
 weight.segments.df$Deployment_type <- as.factor(weight.segments.df$Deployment_type)
@@ -147,7 +148,7 @@ weight.segments.df$Deployment_type <- factor(weight.segments.df$Deployment_type,
 
 names(tag.events)
 # weight.segments.df$GPS_TDR_order2 <- NA
-
+levels(tag.events$GPS_TDR_order2)
 # Actual mass date
 p <- ggplot(tag.events, aes(date_time_rel_utc, mass, colour = GPS_TDR_order2, shape=GPS_TDR_order2)) +
   # geom_boxplot(outlier.size=0, alpha = 0.5) +
