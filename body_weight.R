@@ -137,16 +137,16 @@ weight.segments.df <- merge(weight.segments.df, dcast(tag.events, formula = ring
                             value.var = "date_time_rel_utc"), by = "ring_number")
 names(weight.segments.df) <- c("ring_number", "mass.1", "mass.2", "mass.3",
                                "date.1", "date.2", "date.3")
-weight.segments.df <- merge(weight.segments.df, tag.events[tag.events$GPS_TDR_event == 1,c(4,19,21)], by = "ring_number")
-weight.segments.df <- merge(weight.segments.df, tag.events[tag.events$GPS_TDR_event == 2,c(4,21)], by = "ring_number")
+weight.segments.df <- merge(weight.segments.df, tag.events[tag.events$GPS_TDR_event == 1,c(1,20,22)], by = "ring_number")
+weight.segments.df <- merge(weight.segments.df, tag.events[tag.events$GPS_TDR_event == 2,c(1,22)], by = "ring_number")
 names(weight.segments.df)[9] <- "Deployment_type"
 
 weight.segments.df$Deployment_type <- as.factor(weight.segments.df$Deployment_type)
 weight.segments.df$Deployment_type <- factor(weight.segments.df$Deployment_type,
                                    levels = levels(weight.segments.df$Deployment_type)[c(2,3,1)])
 
-
-
+names(tag.events)
+# weight.segments.df$GPS_TDR_order2 <- NA
 
 # Actual mass date
 p <- ggplot(tag.events, aes(date_time_rel_utc, mass, colour = GPS_TDR_order2, shape=GPS_TDR_order2)) +
@@ -174,6 +174,7 @@ p <- p + scale_x_datetime(breaks = date_breaks("1 days"), labels = date_format("
 # p <- p + theme(panel.grid.minor = element_line(colour = "light grey"))
 p <- p  + labs(list(title = "Individual mass changes", x = "Date (day of June)", y =  "Mass (g)", shape = "Group", col = "Group", fill = "Treatment"))
 # p + geom_text(aes(label = "Treatment"))
+p <- p + theme(legend.key.width=unit(3,"line"))
 plot_indivual_date <- p
 p
 # ?labs
@@ -428,17 +429,7 @@ tag.events2$mass_change_start_day <- tag.events2$mass_change_start/tag.events2$d
  
 # Plots to export ------
  
-#  plot_indivual_date 
-#  
-#  plot_indivual_date_trend <- plot_indivual_date + 
-#    geom_smooth(data= first.tags, method = "lm", se = FALSE, lwd = 1, col = "dark grey") +
-#    geom_smooth(data = first.tags.out, method = "lm", se = FALSE, lwd = 1, col = "red")
-#  
-#  draw_plot_label("A", x = 0, y = 1, hjust = -0.5, vjust = 1.5,
-#                  size = 16, fontface = "bold")
-#  plot_mass_deployment
-#  plot_mass_start
- 
+
  library(gridExtra)
   library(grid)
  library(cowplot)
@@ -448,40 +439,11 @@ tag.events2$mass_change_start_day <- tag.events2$mass_change_start/tag.events2$d
  pdf("weight_change6.pdf",width = 8, height = 7,  pointsize = 10)
 
  # win.metafile(filename = "weight_change.wmf", width = 10, height = 7)
- png(filename = "weight_change6.png",
+ png(filename = "weight_change7.png",
      width = 8, height = 7, units = "in", pointsize = 10,
      bg = "white", res = 600, family = "", restoreConsole = TRUE,
      type = "cairo-png")
  
-#  # Move to a new page
-#  grid.newpage()
-# 
-#  # Create layout : nrow = 2, ncol = 2
-#  pushViewport(viewport(layout = grid.layout(2, 2)))
-#  
-#  # A helper function to define a region on the layout
-#  define_region <- function(row, col){
-#    viewport(layout.pos.row = row, layout.pos.col = col)
-#  } 
-#  
-#  # Arrange the plots
-#  print(plot_indivual_date, vp=define_region(1, 1:2))
-#  print((plot_mass_deployment + theme(legend.position="none")), vp = define_region(2, 1))
-#  print((ggdraw(switch_axis_position((plot_mass_start+ theme(legend.position="none")), 'y'))), vp = define_region(2, 2))
-#  plot_mass_start2 <- plot_mass_start + 
-#    theme(axis.title.x=element_blank(), axis.title.y=element_text(size=0))
- # str(tag.events)
- # ggdraw(switch_axis_position((plot_mass_start+ theme(legend.position="none")), 'y'))
- # switch_axis_position((plot_mass_start+ theme(legend.position="none")), 'y')
-#  str(plot_mass_start)
- 
-#  ?switch_axis_position
-#  ggdraw() +
-#    draw_plot(plot_indivual_date, 0, .5, 1, .5) +
-#    draw_plot((plot_mass_perc_original + theme(legend.position="none")), 0, 0, .5, .5) +
-#    draw_plot(ggdraw(switch_axis_position((plot_mass_dep_perc + theme(legend.position="none")), 'y')), .5, 0, .5, .5) +
-#    draw_plot_label(c("A", "B", "C"), c(0, 0, 0.5), c(1, 0.5, 0.5), size = 15)
-#  
  ggdraw() +
    draw_plot(plot_indivual_date, 0, .5, 1, .5) +
    draw_plot((plot_mass_perc_original + theme(legend.position="none")), 0, 0, .5, .5) +
@@ -493,13 +455,7 @@ tag.events2$mass_change_start_day <- tag.events2$mass_change_start/tag.events2$d
   
   
   
-
-  # ?ggdraw
  
-#  xlab = expression("Dives per bout (N)   "~1^st~" deployment"),
-#  ylab = expression(Delta~~"Mass per day (g/day)",
-#  main = "Dives per bout"
-#  
 # Some stats ----
 library(lme4)
 
