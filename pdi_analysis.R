@@ -116,20 +116,62 @@ for(i in 1:n){
 }
 
 
-
-plot(pdi_05~duration.mid)
-plot(pdi_10~duration.mid)
-plot(pdi_median~duration.mid, ylim = c(0,150))
-
+nf <- n_dives > 4
+plot(pdi_05[nf]~duration.mid[nf], col = as.factor(dep.id))
+plot(pdi_10[nf]~duration.mid[nf], col = as.factor(dep.id))
+plot(pdi_median[nf]~duration.mid[nf], ylim = c(0,150), col = as.factor(dep.id))
+plot(pdi.min[nf]~duration.mid[nf], ylim = c(0,100), col = as.factor(dep.id))
+# ?plot
 
 
 # Combine above into a single DF together with deployment information
-pdi_df <- cbind.data.frame(...)
+pdi_df <- cbind.data.frame(dep.id , duration.min , duration.max , pdi.min ,
+                          pdi_05 , pdi_10 , pdi_median, pdi_mean , pdi_95 ,
+                          duration.mid , n_dives)
+
+# Add deployment info to pdi df (GPS/ TDR and order of deployment) ----
+tdr.deployments$type <- NA
+tdr.deployments$type[tdr.deployments$GPS_TDR_order == "GPS_first" & tdr.deployments$GPS_TDR_event == 1] <- "GPS"
+tdr.deployments$type[tdr.deployments$GPS_TDR_order == "GPS_first" & tdr.deployments$GPS_TDR_event == 2] <- "TDR"
+tdr.deployments$type[tdr.deployments$GPS_TDR_order == "TDR_first" & tdr.deployments$GPS_TDR_event == 1] <- "TDR"
+tdr.deployments$type[tdr.deployments$GPS_TDR_order == "TDR_first" & tdr.deployments$GPS_TDR_event == 2] <- "GPS"
+
+names(pdi_df)[1] <- "TDR_deployment_id"
+
+pdi_df_comb <- merge(pdi_df, tdr.deployments,
+                        by = "TDR_deployment_id")
+
+pdi_df_comb <- pdi_df_comb[pdi_df_comb$TDR_deployment_id != 1,]
 
 # Make plot of above -----
 #' All points (coloured by individual, symbols by order, filled/ open for treatment)
 #' p2p Lines for each individual (colour by individual, and line type by )
 #' After running GLMM model add fit lines too (with and without GPS)
+
+library("ggplot2")
+library(scales)
+
+# Remove those points where values are based on few dives
+# hist(pdi_df_comb$n_dives, breaks = 40, xlim = (c(0,100)))
+pdi_df_comb_sample_10 <- pdi_df_comb
+pdi_df_comb_sample_10[pdi_df_comb$n_dives < 10 ,c(4:7)] <- NA
+
+
+p <- ggplot(pdi_df_comb_sample_10, aes(duration.mid, pdi_05, col = factor(ring_number),
+                             shape= as.factor(type))) +
+  geom_line(aes(lty =  as.factor(type)), lwd = 1.5, alpha = 0.3,
+            position = position_jitterdodge(dodge.width = 5), show.legend = TRUE)+
+  geom_point(alpha=0.6,
+             size=3, position = position_jitterdodge(dodge.width = 5)) 
+p <- p + theme_bw()
+# p + ylim(0,120)
+p
+# p <- p  + labs(list(title = "Individual mass changes", x = "Deployment event number", y =  "Mass (g)"))
+
+
+
+
+
 
 # Peform GLMM -----
 # Analyse data with model form: 
