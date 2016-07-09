@@ -11,8 +11,30 @@ FROM guillemots_GPS_TDR_events
                       ORDER BY guillemots_GPS_TDR_events.ring_number, guillemots_GPS_TDR_events.GPS_TDR_event;",
                       as.is = TRUE)
 
+
+# Get Cort data
+cort.events <- sqlQuery(gps.db,
+                       query = "SELECT guillemots_GPS_TDR_events_cort.*
+                       FROM guillemots_GPS_TDR_events_cort
+                       ORDER BY guillemots_GPS_TDR_events_cort.bird_id, guillemots_GPS_TDR_events_cort.Date;",
+                       as.is = TRUE)
+ 
+
 # Drop record with missing data
 tag.events <- tag.events[tag.events$ring_number != "AAZ988",]
+
+# Only include cort samples in tag.events
+cort.events <- cort.events[cort.events$bird_id %in% tag.events$ring_number,]
+
+
+# Combine the two tables ----
+cort.events <- cort.events[order(cort.events$bird_id, cort.events$Date),]
+tag.events <- tag.events[order(tag.events$ring_number, tag.events$date_time_cap_utc),]
+
+all.equal(cort.events$bird_id, tag.events$ring_number)
+
+tag.events <- cbind.data.frame(tag.events, cort.events$CORTAssay_plate, cort.events$CORT)
+names(tag.events)[16:17] <- c("cort_assay_plate", "cort")
 
 # Do some calculations on this -----
 # Weight changes (from start, and from previous occasion)
@@ -125,11 +147,31 @@ p <- p + scale_fill_manual(values=col_3) + scale_colour_manual(values=col_3)
 p
 
 
+# Cort
+p <- ggplot(tag.events, aes(GPS_TDR_event, cort, fill = GPS_TDR_order)) +
+  geom_boxplot(outlier.size=0, alpha = 0.5) +
+  geom_line(aes(as.numeric(GPS_TDR_event)+ adjusted  ,cort,
+                group = ring_number, colour = GPS_TDR_order), lwd = 1.5, alpha = 0.3)+
+  geom_point(aes(as.numeric(GPS_TDR_event)  + adjusted,cort, colour = GPS_TDR_order),
+             alpha=0.6,
+             size=3,
+             show_guide=FALSE) +
+  theme_bw()
+p <- p  + labs(list(title = "Individual cort changes", x = "Deployment event number", y =  "Cort"))
+p <- p + scale_fill_manual(values=col_3) + scale_colour_manual(values=col_3)
+p
+
+
+
 tag.events$type <- "Control"
 tag.events$type[tag.events$GPS_TDR_event == 1 & tag.events$GPS_TDR_order == "GPS_first"] <- "GPS & TDR"
 tag.events$type[tag.events$GPS_TDR_event == 2 & tag.events$GPS_TDR_order == "GPS_first"] <- "TDR"
 tag.events$type[tag.events$GPS_TDR_event == 2 & tag.events$GPS_TDR_order == "TDR_first"] <- "GPS & TDR"
 tag.events$type[tag.events$GPS_TDR_event == 1 & tag.events$GPS_TDR_order == "TDR_first"] <- "TDR"
+
+
+# Reorder tag.events
+tag.events <- tag.events[,c(1:15, 18:25, 16:17)]
 
 library("reshape2")
 weight.segments.df <- dcast(tag.events, formula = ring_number ~ GPS_TDR_event,
