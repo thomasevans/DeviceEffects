@@ -13,7 +13,7 @@ deployments$Date <- as.Date(deployments$Date, tz = "UTC")
 deployments$june_day <- as.numeric(format(deployments$Date, "%d"))
 
 # Residual mass (following seasonal correction)
-deployments$Mass_resid <- deployments$Mass-973.8 + 3.8*deployments$june_day
+# deployments$Mass_resid <- deployments$Mass-973.8 + 3.8*deployments$june_day
 # hist(deployments$Mass_resid)
 
 # Change in mass/ Cort
@@ -21,46 +21,47 @@ deployments$Mass_resid <- deployments$Mass-973.8 + 3.8*deployments$june_day
 dep.ord <- order(deployments$Metal, deployments$Capture)
 deployments <- deployments[dep.ord,]
 
-
-# From last
-deployments$mass_change_last <- NA
-
-# 1 to 2
-deployments$mass_change_last[deployments$TYPE != "background" & deployments$Capture == 2] <- deployments$Mass[deployments$TYPE != "background" & deployments$Capture == 2] - deployments$Mass[deployments$TYPE != "background" & deployments$Capture == 1]
-levels(deployments$TYPE)
-# 2 to 3
-deployments$mass_change_last[deployments$TYPE == "device" & deployments$Capture == 3] <- deployments$Mass[deployments$TYPE == "device" & deployments$Capture == 3] - deployments$Mass[deployments$TYPE == "device" & deployments$Capture == 2]
-
-
-# From start
-deployments$mass_change_start <- NA
-
-# 1 to 2
-deployments$mass_change_start[deployments$TYPE != "background" & deployments$Capture == 2] <- deployments$Mass[deployments$TYPE != "background" & deployments$Capture == 2] - deployments$Mass[deployments$TYPE != "background" & deployments$Capture == 1]
-levels(deployments$TYPE)
-# 2 to 3
-deployments$mass_change_start[deployments$TYPE == "device" & deployments$Capture == 3] <- deployments$Mass[deployments$TYPE == "device" & deployments$Capture == 3] - deployments$Mass[deployments$TYPE == "device" & deployments$Capture == 1]
-
+deployments$CORT_log <- log10(deployments$CORT)
 
 
 # From last
-deployments$mass_resid_change_last <- NA
+deployments$CORT_change_last <- NA
 
 # 1 to 2
-deployments$mass_resid_change_last[deployments$TYPE != "background" & deployments$Capture == 2] <- deployments$Mass_resid[deployments$TYPE != "background" & deployments$Capture == 2] - deployments$Mass_resid[deployments$TYPE != "background" & deployments$Capture == 1]
+deployments$CORT_change_last[deployments$TYPE != "background" & deployments$Capture == 2] <- deployments$CORT[deployments$TYPE != "background" & deployments$Capture == 2] - deployments$CORT[deployments$TYPE != "background" & deployments$Capture == 1]
 levels(deployments$TYPE)
 # 2 to 3
-deployments$mass_resid_change_last[deployments$TYPE == "device" & deployments$Capture == 3] <- deployments$Mass_resid[deployments$TYPE == "device" & deployments$Capture == 3] - deployments$Mass_resid[deployments$TYPE == "device" & deployments$Capture == 2]
+deployments$CORT_change_last[deployments$TYPE == "device" & deployments$Capture == 3] <- deployments$CORT[deployments$TYPE == "device" & deployments$Capture == 3] - deployments$CORT[deployments$TYPE == "device" & deployments$Capture == 2]
 
 
 # From start
-deployments$mass_resid_change_start <- NA
+deployments$CORT_change_start <- NA
 
 # 1 to 2
-deployments$mass_resid_change_start[deployments$TYPE != "background" & deployments$Capture == 2] <- deployments$Mass_resid[deployments$TYPE != "background" & deployments$Capture == 2] - deployments$Mass_resid[deployments$TYPE != "background" & deployments$Capture == 1]
+deployments$CORT_change_start[deployments$TYPE != "background" & deployments$Capture == 2] <- deployments$CORT[deployments$TYPE != "background" & deployments$Capture == 2] - deployments$CORT[deployments$TYPE != "background" & deployments$Capture == 1]
 levels(deployments$TYPE)
 # 2 to 3
-deployments$mass_resid_change_start[deployments$TYPE == "device" & deployments$Capture == 3] <- deployments$Mass_resid[deployments$TYPE == "device" & deployments$Capture == 3] - deployments$Mass_resid[deployments$TYPE == "device" & deployments$Capture == 1]
+deployments$CORT_change_start[deployments$TYPE == "device" & deployments$Capture == 3] <- deployments$CORT[deployments$TYPE == "device" & deployments$Capture == 3] - deployments$CORT[deployments$TYPE == "device" & deployments$Capture == 1]
+
+# From last
+deployments$CORT_log_log_change_last <- NA
+
+# 1 to 2
+deployments$CORT_log_change_last[deployments$TYPE != "background" & deployments$Capture == 2] <- deployments$CORT_log[deployments$TYPE != "background" & deployments$Capture == 2] - deployments$CORT_log[deployments$TYPE != "background" & deployments$Capture == 1]
+levels(deployments$TYPE)
+# 2 to 3
+deployments$CORT_log_change_last[deployments$TYPE == "device" & deployments$Capture == 3] <- deployments$CORT_log[deployments$TYPE == "device" & deployments$Capture == 3] - deployments$CORT_log[deployments$TYPE == "device" & deployments$Capture == 2]
+
+
+# From start
+deployments$CORT_log_change_start <- NA
+
+# 1 to 2
+deployments$CORT_log_change_start[deployments$TYPE != "background" & deployments$Capture == 2] <- deployments$CORT_log[deployments$TYPE != "background" & deployments$Capture == 2] - deployments$CORT_log[deployments$TYPE != "background" & deployments$Capture == 1]
+levels(deployments$TYPE)
+# 2 to 3
+deployments$CORT_log_change_start[deployments$TYPE == "device" & deployments$Capture == 3] <- deployments$CORT_log[deployments$TYPE == "device" & deployments$Capture == 3] - deployments$CORT_log[deployments$TYPE == "device" & deployments$Capture == 1]
+
 
 
 
@@ -76,20 +77,20 @@ deployments$days_dep[deployments$TYPE == "device" & deployments$Capture == 3] <-
 
 
 # Changes per day 
-deployments$mass_change_start_day <- deployments$mass_change_start / deployments$days_dep
-deployments$mass_change_last_day <- deployments$mass_change_last/ deployments$days_dep
-deployments$mass_resid_change_start_day <- deployments$mass_resid_change_start/ deployments$days_dep
-deployments$mass_resid_change_last_day <- deployments$mass_resid_change_last/ deployments$days_dep
+deployments$CORT_change_start_day <- deployments$CORT_change_start / deployments$days_dep
+deployments$CORT_change_last_day <- deployments$CORT_change_last/ deployments$days_dep
+deployments$CORT_log_change_start_day <- deployments$CORT_log_change_start/ deployments$days_dep
+deployments$CORT_log_change_last_day <- deployments$CORT_log_change_last/ deployments$days_dep
 
 
 
 # Make new data-frame ----
 
 # Save to RData file
-save(deployments, file = "deployments_mass_calc.RData")
+save(deployments, file = "deployments_mass_calc_cort.RData")
 
 # Save to csv file
-write.csv(deployments, file = "deployments_mass_calc.csv")
+write.csv(deployments, file = "deployments_mass_calc_cort.csv")
 
 # Make ggplot figures for mass changes -----
 
@@ -131,55 +132,30 @@ deployments$group[deployments$Metal %in% second_device] <- "+G2"
 
 deployments$group <- as.factor(deployments$group)
 
-# - Actual mass ----
-p <- ggplot(deployments, aes(june_day, Mass,
+# - Log CORT ----
+p <- ggplot(deployments, aes(june_day, CORT_log,
                              colour = group, group = Metal, shape = group)) +
-  geom_point(aes(june_day, Mass),
+  geom_point(aes(june_day, CORT_log),
              alpha=0.8,
              size=3,
              show.legend =TRUE) +
   geom_line() +
   theme_bw()
 p <- p  + scale_colour_manual(values=col_3)
-p <- p  + labs(list(x = "Date (day of June)", y =  "Mass (g)", shape = "Group", col = "Group", fill = "Treatment"))
+p <- p  + labs(list(x = "Date (day of June)", y =  expression("CORT"~~(LOG[10])~~""), shape = "Group", col = "Group", fill = "Treatment"))
 p <- p + theme(legend.key.width=unit(2,"line"))
 p <- p + geom_abline(intercept = 973.791, slope = -3.829,
                      alpha = 0.5,lwd = 2,
                      lty = 2, col = "grey60")
 
 p
-ggsave(filename = "change_mass_date.svg", width = 6, height = 4,
+ggsave(filename = "change_CORT_date.svg", width = 6, height = 4,
        units = "in")
-ggsave(filename = "change_mass_date.png", width = 6, height = 4,
+ggsave(filename = "change_CORT_date.png", width = 6, height = 4,
        units = "in")
-ggsave(filename = "change_mass_date.pdf", width = 6, height = 4,
+ggsave(filename = "change_CORT_date.pdf", width = 6, height = 4,
        units = "in")
-# ?ggsave
 
-
-# - Residual mass -----
-p <- ggplot(deployments, aes(june_day, Mass_resid,
-                             colour = group, group = Metal, shape = group)) +
-  geom_point(aes(june_day, Mass_resid),
-             alpha=0.8,
-             size=3,
-             show.legend =TRUE) +
-  geom_line() +
-  theme_bw()
-p <- p  + scale_colour_manual(values=col_3)
-p <- p  + labs(list(x = "Date (day of June)", y =  "Residual mass (g)", shape = "Group", col = "Group", fill = "Treatment"))
-p <- p + theme(legend.key.width=unit(2,"line"))
-p <- p + geom_abline(intercept = 0, slope = 0,
-                     alpha = 0.5,lwd = 2,
-                     lty = 2, col = "grey60")
-
-p
-ggsave(filename = "change_mass_resid_date.svg", width = 6, height = 4,
-       units = "in")
-ggsave(filename = "change_mass_resid_date.png", width = 6, height = 4,
-       units = "in")
-ggsave(filename = "change_mass_resid_date.pdf", width = 6, height = 4,
-       units = "in")
 
 
 # LMM models -----
@@ -203,39 +179,38 @@ KRSumFun <- function(object, objectDrop, ...) {
 }
 
 
-# deployments$device.status
 # Device deployments only ----
-mod.devices <- lmer( mass_resid_change_last_day ~
+mod.devices <- lmer( CORT_log_change_last_day ~
                        device.status*group +
                        (1|Metal),
                      data = deployments[deployments$TYPE == "device" & deployments$Capture != 1,])
 
-mod.devices2 <- lmer( mass_resid_change_last_day ~
+mod.devices2 <- lmer( CORT_log_change_last_day ~
                         device.status+group +
                         (1|Metal),
                       data = deployments[deployments$TYPE == "device" & deployments$Capture != 1,])
 
-mod.devices3 <- lmer( mass_resid_change_last_day ~
+mod.devices3 <- lmer( CORT_log_change_last_day ~
                         device.status +
                         (1|Metal),
                       data = deployments[deployments$TYPE == "device" & deployments$Capture != 1,])
 
-mod.devices4 <- lmer( mass_resid_change_last_day ~
+mod.devices4 <- lmer( CORT_log_change_last_day ~
                         1 +
                         (1|Metal),
                       data = deployments[deployments$TYPE == "device" & deployments$Capture != 1,])
 
-mod.devices5 <- lmer( mass_resid_change_last_day ~
+mod.devices5 <- lmer( CORT_log_change_last_day ~
                         group +
                         (1|Metal),
                       data = deployments[deployments$TYPE == "device" & deployments$Capture != 1,])
 
 summary(mod.devices)
 
-a <- AICc(mod.devices)
+AICc(mod.devices) -a
 AICc(mod.devices2) -a
 AICc(mod.devices3) -a
-AICc(mod.devices4) - a
+a <- AICc(mod.devices4)
 AICc(mod.devices5) -a 
 
 r.squaredGLMM(mod.devices)
@@ -245,25 +220,25 @@ r.squaredGLMM(mod.devices4)
 r.squaredGLMM(mod.devices5)
 
 
-ggplot(aes(y = mass_resid_change_last_day, x = device.status,
+ggplot(aes(y = CORT_log_change_last_day, x = device.status,
            fill = group),
        data = deployments[deployments$TYPE == "device" & deployments$Capture != 1,])+
   geom_boxplot(outlier.size = 0, alpha = 0.7) +
   geom_point(pch = 21, position = position_jitterdodge(),
              alpha = 0.6)+
   labs(list(x = "Device type",
-            y = expression(Delta~~"Mass per day"~~(g.day^-1)~~""),
+            y = expression(Delta~~"CORT"~~(Log[10])~~"per day"),
             fill = "Order")) +
   theme_new +
   scale_colour_manual(values=col_3[1:2]) +
   scale_fill_manual(values=col_3[1:2]) +
-  theme(legend.position = c(0.4, 1))
+  theme(legend.position = c(0.7, 1))
 
-ggsave(filename = "change_mass_resid_date_boxplots.svg", width = 4, height = 4,
+ggsave(filename = "change_CORT_log_date_boxplots.svg", width = 4, height = 4,
        units = "in")
-ggsave(filename = "change_mass_resid_date_boxplots.png", width = 4, height = 4,
+ggsave(filename = "change_CORT_log_date_boxplots.png", width = 4, height = 4,
        units = "in")
-ggsave(filename = "change_mass_resid_date_boxplots.pdf", width = 4, height = 4,
+ggsave(filename = "change_CORT_log_date_boxplots.pdf", width = 4, height = 4,
        units = "in")
 # deployments$group
 
@@ -277,11 +252,11 @@ mod.devices_coef <- summary(mod.devices)$coef[, 1]
 mod.devices_ci <- confint(mod.devices, method="Wald")
 mod.devices_par_df <- cbind.data.frame(mod.devices_coef,mod.devices_ci[-c(1:2),])
 
-
-
-mod.devices_coef <- summary(mod.devices2)$coef[, 1]
-mod.devices_ci <- confint(mod.devices2, method="Wald")
-mod.devices_par_df <- cbind.data.frame(mod.devices_coef,mod.devices_ci[-c(1:2),])
+# 
+# 
+# mod.devices_coef <- summary(mod.devices2)$coef[, 1]
+# mod.devices_ci <- confint(mod.devices2, method="Wald")
+# mod.devices_par_df <- cbind.data.frame(mod.devices_coef,mod.devices_ci[-c(1:2),])
 
 
 
@@ -292,7 +267,7 @@ mod.devices_par_df <- cbind.data.frame(mod.devices_coef,mod.devices_ci[-c(1:2),]
 
 
 # All 1st deployment only ----
-mod.devices <- lm( mass_resid_change_last_day ~
+mod.devices <- lm( CORT_log_change_last_day ~
                      group,
                    data = deployments[deployments$TYPE != "background" & deployments$Capture == 2,])
 summary(mod.devices)
@@ -306,23 +281,23 @@ anova(mod.devices)
 
 
 ggplot(deployments[deployments$TYPE != "background" & deployments$Capture == 2,],
-       aes(x = group, fill = group, y = mass_resid_change_last_day))+
+       aes(x = group, fill = group, y = CORT_log_change_last_day))+
   geom_boxplot(outlier.size = 0, alpha = 0.7, show.legend = FALSE) +
   geom_point(pch = 21, position = position_jitter(),
              alpha = 0.6, show.legend = FALSE)+
   labs(list(x = "Group",
-            y = expression(Delta~~"Mass per day"~~(g.day^-1)~~""),
+            y = expression(Delta~~"CORT"~~(Log[10])~~"per day"),
             fill = "")) +
   theme_new +
   scale_colour_manual(values=col_3[1:3]) +
   scale_fill_manual(values=col_3[1:3]) +
   theme(legend.position = c(0.4, 1))
 
-ggsave(filename = "change_mass_resid_date_boxplots2.svg", width = 4, height = 4,
+ggsave(filename = "change_CORT_log_date_boxplots2.svg", width = 4, height = 4,
        units = "in")
-ggsave(filename = "change_mass_resid_date_boxplots2.png", width = 4, height = 4,
+ggsave(filename = "change_CORT_log_date_boxplots2.png", width = 4, height = 4,
        units = "in")
-ggsave(filename = "change_mass_resid_date_boxplots2.pdf", width = 4, height = 4,
+ggsave(filename = "change_CORT_log_date_boxplots2.pdf", width = 4, height = 4,
        units = "in")
 
 
