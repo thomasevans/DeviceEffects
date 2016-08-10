@@ -178,6 +178,20 @@ p
 # p <- p  + labs(list(title = "Individual mass changes", x = "Deployment event number", y =  "Mass (g)"))
 
 
+# Plotting with median instead
+pdi_df_comb_sample_10$pdi_median2 <- pdi_df_comb_sample_10$pdi_median
+pdi_df_comb_sample_10$pdi_median2[pdi_df_comb_sample_10$pdi_median2 > 200] <- NA
+
+p <- ggplot(pdi_df_comb_sample_10, aes(duration.mid_new, pdi_median2, col = factor(ring_number),
+                                       shape= as.factor(type))) +
+  geom_line(aes(lty =  as.factor(type)), lwd = 1.5, alpha = 0.3,
+            show.legend = TRUE)+
+  geom_point(alpha=0.6,
+             size=3) 
+p <- p + theme_bw()
+# p + ylim(0,120)
+p
+
 
 
 
@@ -191,11 +205,13 @@ library(lme4)
 mod.1 <- glmer(pdi_25_log ~ duration.mid + type + (1|GPS_TDR_order/ring_number),
                data = pdi_df_comb_sample_10)
 summary(mod.1)
-
+str(pdi_df_comb_sample_10)
 mod.1
 anova(mod.1)
 
 drop1(mod.1, test = "Chisq")
+
+exp(-0.176549)
 
 plot(mod.1)
 str(mod.1)
@@ -216,6 +232,7 @@ mod.1.no_resid
 anova(mod.1.no_resid)
 
 drop1(mod.1.no_resid, test = "Chisq")
+
 plot(mod.1.no_resid)
 
 pdi_df_comb_sample_10$all_predict_25_no_resid <- predict(mod.1.no_resid,pdi_df_comb_sample_10)
