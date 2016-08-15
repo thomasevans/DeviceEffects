@@ -50,6 +50,7 @@ dives_df <- merge(dives, tdr.deployments,
 # Remove record for murre where both sets of data were not collected
 dives_df <- dives_df[dives_df$TDR_deployment_id != 1,]
 
+names(dives_df)[names(dives_df)=="ring_number.x"] <- "ring_number"
 
 # Day of june -----
 # day of June
@@ -487,3 +488,604 @@ summary(models_logist[[1]])
 plot(models_logist[[1]])
 qqmath(models_logist[[1]])
 plot(models[[1]])
+
+
+
+# **** Post dive interval ------
+# Following a similar approach to that for dive depth, though this time
+# including dive depth in model, as PDI will depend on this
+
+# Filter to not include final dives, nor single dives, only those before end of dive bout
+dives_pdi <- dives_df[!(dives_df$divetype %in% c("last", "single")),]
+hist(dives_pdi$pdi, breaks = 100)
+hist(dives_pdi$pdi, breaks = 1000, xlim = c(0,400))
+
+# Remove extreme values
+dives_pdi <- dives_pdi[dives_pdi$pdi < 300 &
+                         dives_pdi$depth_max_m > 10,]
+
+ggplot(dives_pdi, aes(x = duration_s, y = log(pdi)))+
+  geom_point(alpha = 0.3) +
+  geom_density_2d()
+  
+ggplot(dives_pdi, aes(x = depth_max_m, y = log(pdi),
+                      group = GPS_TDR_order, colour = GPS_TDR_order))+
+  geom_point(alpha = 0.3) +
+  geom_density_2d()
+
+
+
+ggplot(dives_pdi, aes(x = depth_max_m, y = pdi,
+                      group = type, colour = type))+
+  geom_point(alpha = 0.3) +
+  geom_density_2d()
+
+ggplot(dives_pdi, aes(x = depth_max_m, y = duration_s,
+                      group = type, colour = type))+
+  geom_point(alpha = 0.3) +
+  geom_density_2d()
+
+
+
+ggplot(dives_pdi, aes(x = (depth_max_m), y = bottom_dur_s/(duration_s+pdi),
+                      group = type, colour = type))+
+  geom_point(alpha = 0.3) +
+  geom_density_2d()
+
+
+
+ggplot(dives_pdi, aes(x = sqrt(depth_max_m), y = descent_dur_s,
+                      group = type, colour = type))+
+  geom_point(alpha = 0.3) +
+  geom_density_2d() +
+  geom_smooth(method = "lm", se = TRUE)
+
+ggplot(dives_pdi, aes(x = sqrt(depth_max_m), y = ascent_dur_s,
+                      group = type, colour = type))+
+  geom_point(alpha = 0.3) +
+  geom_density_2d() +
+  geom_smooth(method = "lm", se = TRUE)
+
+ggplot(dives_pdi, aes(x = (depth_max_m), y = (pdi),
+                      group = type, colour = type))+
+  geom_point(alpha = 0.3) +
+  geom_density_2d() +
+  geom_smooth(method = "lm", se = TRUE)
+
+
+str(dives_pdi)
+
+# dives_pdi$duration_s
+
+str(dives_df)
+
+
+
+# Statistical models for dive efficiency ----
+dives_pdi <- dives_df[!(dives_df$divetype %in% c("last", "single")),]
+hist(dives_pdi$pdi, breaks = 100)
+hist(dives_pdi$pdi, breaks = 1000, xlim = c(0,400))
+
+# Remove extreme values for pdi and shallow dives
+dives_pdi <- dives_pdi[dives_pdi$pdi < 250 &
+                         dives_pdi$depth_max_m > 10,]
+
+# Calculate dive efficiency
+dives_pdi$dive_efficiency <- dives_pdi$bottom_dur_s/(dives_pdi$duration_s+dives_pdi$pdi)
+hist(dives_pdi$dive_efficiency)
+
+# Stats models
+models <- list()
+
+
+models.2[[1]] <- glmer(dive_efficiency ~
+                       GPS_TDR_order*type +
+                       depth_max_m +
+                       june_day +
+                       day_period +
+                       (1|ring_number/june_day/dive_bout_id),
+                     data = dives_pdi)
+# r.squaredGLMM(models[[1]])
+
+models[[2]] <- glmer(dive_efficiency ~
+                       GPS_TDR_order+type +
+                       depth_max_m +
+                       june_day +
+                       day_period +
+                       (1|ring_number/june_day/dive_bout_id),
+                     data = dives_pdi)
+
+models[[3]] <- glmer(dive_efficiency ~
+                       GPS_TDR_order +
+                       depth_max_m +
+                       june_day +
+                       day_period +
+                       (1|ring_number/june_day/dive_bout_id),
+                     data = dives_pdi)
+
+models[[4]] <- glmer(dive_efficiency ~
+                       type +
+                       depth_max_m +
+                       june_day +
+                       day_period +
+                       (1|ring_number/june_day/dive_bout_id),
+                     data = dives_pdi)
+
+models[[5]] <- glmer(dive_efficiency ~
+                       depth_max_m +
+                       june_day +
+                       day_period +
+                       (1|ring_number/june_day/dive_bout_id),
+                     data = dives_pdi)
+
+models[[6]] <- glmer(dive_efficiency ~
+                       1 +
+                       (1|ring_number/june_day/dive_bout_id),
+                     data = dives_pdi)
+
+
+
+# Summarise information from the models
+models.aicc <- sapply(models, AICc)
+models.aicc.dif <- models.aicc-min(models.aicc)
+models.r2m <- sapply(models, r.squaredGLMM)
+t(models.r2m)
+MuMIn::r.squaredGLMM
+models.fit.df <- cbind.data.frame(c(1:length(models)),models.aicc,
+                                  models.aicc.dif,
+                                  t(models.r2m))
+names(models.fit.df) <- c("mod", "AICc", "dAICc", "R2m", "R2c")
+
+anova(models[[4]],models[[5]])
+
+# Significance for dropped terms
+drop1(models[[5]], test = "user", sumFun = KRSumFun)
+
+# Cite: Halekoh, U., and Højsgaard, S. (2014). A kenward-roger approximation and parametric bootstrap methods for tests in linear mixed models–the R package pbkrtest. Journal of Statistical Software 59, 1–30.
+
+# "The result could reported as a Kenward-Roger corrected test with F(1, 118.5) = 16.17, p = .0001024"
+# From: https://seriousstats.wordpress.com/tag/kenward-roger-approximation/
+
+
+# Confidence intervals + coeficients
+model_va_coef <- summary(models[[5]])$coef[, 1]
+model_va_ci <- confint(models[[5]], method="Wald")
+model_va_par_df <- cbind.data.frame(model_va_coef,model_va_ci[-c(1:4),])
+
+summary(models[[5]])
+# Check model behaviour
+plot(models[[1]])
+qqmath(models[[1]])
+
+
+ggplot(dives_pdi, aes(x = (depth_max_m), y = dive_efficiency,
+                      group = type, colour = type))+
+  geom_point(alpha = 0.3) +
+  geom_density_2d()
+
+#
+
+
+
+
+
+
+# Statistical models for pdi ----
+dives_pdi <- dives_df[!(dives_df$divetype %in% c("last", "single")),]
+hist(dives_pdi$pdi, breaks = 100)
+hist(dives_pdi$pdi, breaks = 1000, xlim = c(0,400))
+
+# Remove extreme values for pdi and shallow dives
+dives_pdi <- dives_pdi[dives_pdi$pdi < 300 &
+                         dives_pdi$depth_max_m > 10,]
+dives_pdi <- dives_pdi[!is.na(dives_pdi$pdi),]
+dives_pdi <- dives_pdi[(dives_pdi$pdi) != 0,]
+
+range(dives_pdi$pdi)
+
+
+# Stats models
+models <- list()
+
+
+models[[1]] <- glmer(pdi~
+                       GPS_TDR_order*type +
+                       depth_max_m +
+                       june_day +
+                       day_period +
+                       (1|ring_number/june_day/dive_bout_id),
+                     data = dives_pdi)
+# r.squaredGLMM(models[[1]])
+
+models[[2]] <- glmer(pdi~
+                       GPS_TDR_order+type +
+                       depth_max_m +
+                       june_day +
+                       day_period +
+                       (1|ring_number/june_day/dive_bout_id),
+                     data = dives_pdi)
+
+models[[3]] <- glmer(pdi~
+                       GPS_TDR_order +
+                       depth_max_m +
+                       june_day +
+                       day_period +
+                       (1|ring_number/june_day/dive_bout_id),
+                     data = dives_pdi)
+
+models[[4]] <- glmer(pdi~
+                       type +
+                       depth_max_m +
+                       june_day +
+                       day_period +
+                       (1|ring_number/june_day/dive_bout_id),
+                     data = dives_pdi)
+
+models[[5]] <- glmer((pdi) ~
+                       depth_max_m +
+                       june_day +
+                       day_period +
+                       (1|ring_number/june_day/dive_bout_id),
+                     data = dives_pdi)
+# 
+# models[[7]] <- glmer(pdi~
+#                        depth_max_m +
+#                        june_day +
+#                        day_period +
+#                        (1|ring_number/dive_bout_id),
+#                      data = dives_pdi)
+# 
+
+# Would some transformation help?
+# MASS::boxcox(lm(pdi~depth_max_m,data=dives_pdi))
+# Doesn't look like it!
+
+models[[6]] <- glmer(pdi~
+                       1 +
+                       (1|ring_number/june_day/dive_bout_id),
+                     data = dives_pdi)
+
+
+
+# Summarise information from the models
+models.aicc <- sapply(models, AICc)
+models.aicc.dif <- models.aicc-min(models.aicc)
+models.r2m <- sapply(models, r.squaredGLMM)
+t(models.r2m)
+# MuMIn::r.squaredGLMM
+models.fit.df <- cbind.data.frame(c(1:length(models)),models.aicc,
+                                  models.aicc.dif,
+                                  t(models.r2m))
+names(models.fit.df) <- c("mod", "AICc", "dAICc", "R2m", "R2c")
+
+anova(models[[1]],models[[5]])
+anova(models[[1]],models[[4]])
+anova(models[[1]],models[[3]])
+anova(models[[1]],models[[2]])
+anova(models[[1]],models[[6]])
+
+# Significance for dropped terms
+drop1(models[[5]], test = "user", sumFun = KRSumFun)
+
+
+hist(log(dives_pdi$pdi))
+
+# Cite: Halekoh, U., and Højsgaard, S. (2014). A kenward-roger approximation and parametric bootstrap methods for tests in linear mixed models–the R package pbkrtest. Journal of Statistical Software 59, 1–30.
+
+# "The result could reported as a Kenward-Roger corrected test with F(1, 118.5) = 16.17, p = .0001024"
+# From: https://seriousstats.wordpress.com/tag/kenward-roger-approximation/
+
+
+# Confidence intervals + coeficients
+model_va_coef <- summary(models[[5]])$coef[, 1]
+model_va_ci <- confint(models[[5]], method="Wald")
+model_va_par_df <- cbind.data.frame(model_va_coef,model_va_ci[-c(1:4),])
+
+summary(models[[1]])
+# Check model behaviour
+plot(models[[5]])
+qqmath(models[[5]])
+
+hist(residuals(models[[5]]))
+
+ggplot(dives_pdi, aes(x = (depth_max_m), y = (pdi),
+                      group = day_period, colour = day_period))+
+  geom_point(alpha = 0.3) +
+  geom_density_2d()
+
+ggplot(dives_pdi, aes(x = (june_day), y = (pdi)))+
+  geom_point(alpha = 0.3) +
+  geom_density_2d()
+
+j_day <- dives_pdi$june_day[!(is.na(dives_pdi$dive_bout_id))]
+test.df <- cbind.data.frame(residuals(models[[7]]), j_day)
+names(test.df) <- c("resid", "date")
+
+ggplot(test.df, aes(x = (date), y = (resid)))+
+  geom_point(alpha = 0.3) +
+  geom_density_2d() +
+  geom_smooth(method = "lm", se = TRUE) +
+  ylim(c(-50,50))
+
+t.m <- lm(test.df$resid~test.df$date)
+summary(t.m)
+
+
+# dives_pdi.new <- dives_pdi[!(is.na(dives_pdi))]
+
+
+
+
+
+
+
+# Statistical models for descent rate ----
+dives_pdi <- dives_df[!(dives_df$divetype %in% c("last", "single")),]
+hist(dives_pdi$pdi, breaks = 100)
+hist(dives_pdi$pdi, breaks = 1000, xlim = c(0,400))
+
+# Remove extreme values for pdi and shallow dives
+dives_pdi <- dives_pdi[dives_pdi$pdi < 300 &
+                         dives_pdi$depth_max_m > 10,]
+# dives_pdi <- dives_pdi[!is.na(dives_pdi$pdi),]
+# dives_pdi <- dives_pdi[(dives_pdi$pdi) != 0,]
+
+# range(dives_pdi$pdi)
+
+
+# Stats models
+models <- list()
+
+# str(dives_pdi)
+models[[1]] <- glmer(descent_dur_s~
+                       GPS_TDR_order*type +
+                       depth_max_m +
+                       june_day +
+                       day_period +
+                       (1|ring_number/june_day/dive_bout_id),
+                     data = dives_pdi)
+# r.squaredGLMM(models[[1]])
+
+models[[2]] <- glmer(descent_dur_s~
+                       GPS_TDR_order+type +
+                       depth_max_m +
+                       june_day +
+                       day_period +
+                       (1|ring_number/june_day/dive_bout_id),
+                     data = dives_pdi)
+
+# models[[7]] <- glmer(descent_dur_s~
+#                        GPS_TDR_order+
+#                        type*depth_max_m +
+#                        june_day +
+#                        day_period +
+#                        (1|ring_number/june_day/dive_bout_id),
+#                      data = dives_pdi)
+
+models[[3]] <- glmer(descent_dur_s~
+                       GPS_TDR_order +
+                       depth_max_m +
+                       june_day +
+                       day_period +
+                       (1|ring_number/june_day/dive_bout_id),
+                     data = dives_pdi)
+
+models[[4]] <- glmer(descent_dur_s~
+                       type +
+                       depth_max_m +
+                       june_day +
+                       day_period +
+                       (1|ring_number/june_day/dive_bout_id),
+                     data = dives_pdi)
+
+models[[5]] <- glmer((descent_dur_s) ~
+                       depth_max_m +
+                       june_day +
+                       day_period +
+                       (1|ring_number/june_day/dive_bout_id),
+                     data = dives_pdi)
+
+# models[[7]] <- glmer(descent_dur_s~
+#                        type +
+#                        depth_max_m +
+#                        june_day +
+#                        # day_period +
+#                        (1|ring_number/june_day/dive_bout_id),
+#                      data = dives_pdi)
+
+# Would some transformation help?
+# MASS::boxcox(lm(pdi~depth_max_m,data=dives_pdi))
+# Doesn't look like it!
+
+models[[6]] <- glmer(descent_dur_s~
+                       1 +
+                       (1|ring_number/june_day/dive_bout_id),
+                     data = dives_pdi)
+
+
+
+# Summarise information from the models
+models.aicc <- sapply(models, AICc)
+models.aicc.dif <- models.aicc-min(models.aicc)
+models.r2m <- sapply(models, r.squaredGLMM)
+t(models.r2m)
+# models.aic.wt <-  exp(-0.5 * models.aicc.dif)
+# models.aic.wt <-  models.aic.wt/sum(models.aic.wt)
+# format(models.aic.wt)
+# MuMIn::r.squaredGLMM
+models.fit.df <- cbind.data.frame(c(1:length(models)),models.aicc,
+                                  models.aicc.dif,
+                                  # models.aic.wt,
+                                  t(models.r2m))
+names(models.fit.df) <- c("mod", "AICc", "dAICc",
+                          # "wAICc",
+                          "R2m", "R2c")
+
+anova(models[[2]],models[[3]])
+anova(models[[2]],models[[4]])
+anova(models[[2]],models[[5]])
+anova(models[[4]],models[[5]])
+
+# Significance for dropped terms
+drop1(models[[2]], test = "user", sumFun = KRSumFun)
+
+
+# Cite: Halekoh, U., and Højsgaard, S. (2014). A kenward-roger approximation and parametric bootstrap methods for tests in linear mixed models–the R package pbkrtest. Journal of Statistical Software 59, 1–30.
+
+# "The result could reported as a Kenward-Roger corrected test with F(1, 118.5) = 16.17, p = .0001024"
+# From: https://seriousstats.wordpress.com/tag/kenward-roger-approximation/
+
+
+# Confidence intervals + coeficients
+model_va_coef <- summary(models[[2]])$coef[, 1]
+model_va_ci <- confint(models[[2]], method="Wald")
+model_va_par_df <- cbind.data.frame(model_va_coef,model_va_ci[-c(1:4),])
+
+summary(models[[2]])
+# Check model behaviour
+plot(models[[2]])
+qqmath(models[[2]])
+
+hist(residuals(models[[2]]))
+
+ggplot(dives_pdi, aes(x = (depth_max_m), y = (ascent_dur_s),
+                      group = type, colour = type))+
+  geom_point(alpha = 0.3) +
+  geom_density_2d()+
+  geom_smooth(method = "lm", se = TRUE)
+
+
+
+# Descent rate ------
+
+dives_pdi$descent_rate <- dives_pdi$descent_dur_s/(0.75*dives_pdi$depth_max_m)
+
+# Stats models.2
+models.2 <- list()
+
+# str(dives_pdi)
+models.2[[1]] <- glmer(descent_rate~
+                       GPS_TDR_order*type +
+                       depth_max_m +
+                       june_day +
+                       day_period +
+                       (1|ring_number/june_day/dive_bout_id),
+                     data = dives_pdi)
+# r.squaredGLMM(models.2[[1]])
+
+models.2[[2]] <- glmer(descent_rate~
+                       GPS_TDR_order+type +
+                       depth_max_m +
+                       june_day +
+                       day_period +
+                       (1|ring_number/june_day/dive_bout_id),
+                     data = dives_pdi)
+
+# models.2[[7]] <- glmer(descent_dur_s/depth_max_m~
+#                        GPS_TDR_order+
+#                        type*depth_max_m +
+#                        june_day +
+#                        day_period +
+#                        (1|ring_number/june_day/dive_bout_id),
+#                      data = dives_pdi)
+
+models.2[[3]] <- glmer(descent_rate~
+                       GPS_TDR_order +
+                       depth_max_m +
+                       june_day +
+                       day_period +
+                       (1|ring_number/june_day/dive_bout_id),
+                     data = dives_pdi)
+
+models.2[[4]] <- glmer(descent_rate~
+                       type +
+                       depth_max_m +
+                       june_day +
+                       day_period +
+                       (1|ring_number/june_day/dive_bout_id),
+                     data = dives_pdi)
+
+models.2[[5]] <- glmer(descent_rate~
+                       depth_max_m +
+                       june_day +
+                       day_period +
+                       (1|ring_number/june_day/dive_bout_id),
+                     data = dives_pdi)
+# 
+# models.2[[7]] <- glmer(descent_rate~
+#                          type*divetype +
+#                          june_day +
+#                          day_period +
+#                          (1|ring_number/june_day/dive_bout_id),
+#                        data = dives_pdi)
+# dives_pdi$divetype
+# models.2[[7]] <- glmer(descent_dur_s/depth_max_m~
+#                        type +
+#                        depth_max_m +
+#                        june_day +
+#                        # day_period +
+#                        (1|ring_number/june_day/dive_bout_id),
+#                      data = dives_pdi)
+
+# Would some transformation help?
+# MASS::boxcox(lm(pdi~depth_max_m,data=dives_pdi))
+# Doesn't look like it!
+
+models.2[[6]] <- glmer(descent_rate~
+                       1 +
+                       (1|ring_number/june_day/dive_bout_id),
+                     data = dives_pdi)
+
+
+
+# Summarise information from the models.2
+models.2.aicc <- sapply(models.2, AICc)
+models.2.aicc.dif <- models.2.aicc-min(models.2.aicc)
+models.2.r2m <- sapply(models.2, r.squaredGLMM)
+t(models.2.r2m)
+# models.2.aic.wt <-  exp(-0.5 * models.2.aicc.dif)
+# models.2.aic.wt <-  models.2.aic.wt/sum(models.2.aic.wt)
+# format(models.2.aic.wt)
+# MuMIn::r.squaredGLMM
+models.2.fit.df <- cbind.data.frame(c(1:length(models.2)),models.2.aicc,
+                                  models.2.aicc.dif,
+                                  # models.2.aic.wt,
+                                  t(models.2.r2m))
+names(models.2.fit.df) <- c("mod", "AICc", "dAICc",
+                          # "wAICc",
+                          "R2m", "R2c")
+# 
+# anova(models.2[[2]],models.2[[3]])
+# anova(models.2[[2]],models.2[[4]])
+# anova(models.2[[2]],models.2[[5]])
+# anova(models.2[[4]],models.2[[5]])
+
+# Significance for dropped terms
+drop1(models.2[[5]], test = "user", sumFun = KRSumFun)
+
+
+# Cite: Halekoh, U., and Højsgaard, S. (2014). A kenward-roger approximation and parametric bootstrap methods for tests in linear mixed models.2–the R package pbkrtest. Journal of Statistical Software 59, 1–30.
+
+# "The result could reported as a Kenward-Roger corrected test with F(1, 118.5) = 16.17, p = .0001024"
+# From: https://seriousstats.wordpress.com/tag/kenward-roger-approximation/
+
+
+# Confidence intervals + coeficients
+model_va_coef <- summary(models.2[[5]])$coef[, 1]
+model_va_ci <- confint(models.2[[5]], method="Wald")
+model_va_par_df <- cbind.data.frame(model_va_coef,model_va_ci[-c(1:4),])
+
+summary(models.2[[5]])
+# Check model behaviour
+plot(models.2[[5]])
+qqmath(models.2[[5]])
+       
+       
+       
+ggplot(dives_pdi, aes(x = (depth_max_m), y = descent_rate,
+                      group = day_period, colour = day_period))+
+  geom_point(alpha = 0.3) +
+  geom_density_2d()+
+  geom_smooth(method = "lm", se = TRUE) +
+  ylim(c(0.3,1.5))
+
