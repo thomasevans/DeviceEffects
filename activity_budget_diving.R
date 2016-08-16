@@ -148,7 +148,7 @@ theme_new <- theme_bw(base_size = 14, base_family = "serif") +
 ggplot(day.df.comb,
        aes(x = type, fill = GPS_TDR_order, y = dive_pdi_p*100))+
   geom_boxplot(outlier.size = 0, alpha = 0.7) +
-  geom_point(pch = 21,position = position_jitterdodge(),
+  geom_point(pch = 21, position = position_jitterdodge(),
              alpha = 0.6)+
   labs(list(x = "Group",
             y = "% day diving + PDI",
@@ -156,36 +156,45 @@ ggplot(day.df.comb,
   theme_new +
   scale_colour_manual(values=col_3[1:3]) +
   scale_fill_manual(values=col_3[1:3]) +
-  theme(legend.position = c(0.4, 1))
+  # theme(legend.position = c(0.4, 1)) +
+  theme(legend.position = "none")
 
 
-ggsave(filename = "activty_dive_pdi_boxplot.svg", width = 4, height = 4,
+ggsave(filename = "activty_dive_pdi_boxplot_no_legend.svg", width = 4, height = 4,
        units = "in")
-ggsave(filename = "activty_dive_pdi_boxplot.png", width = 4, height = 4,
+ggsave(filename = "activty_dive_pdi_boxplot_no_legend.png", width = 4, height = 4,
        units = "in")
-ggsave(filename = "activty_dive_pdi_boxplot.pdf", width = 4, height = 4,
+ggsave(filename = "activty_dive_pdi_boxplot_no_legend.pdf", width = 4, height = 4,
        units = "in")
 
 hist(day.df.comb$dive_pdi_p, breaks = 10)
 
 
+library(scales)
 
 
-
-p <- ggplot(day.df.comb, aes(june_day, dive_pdi_p*100,
-                             colour = GPS_TDR_order,
-                             group = ring_number.x, shape = type)) +
+p <- ggplot(day.df.comb, aes(june_day, dive_pdi_p,
+                             colour = factor(GPS_TDR_order),
+                             shape = type)) +
+  scale_colour_manual(values=col_3) +
+  geom_line(alpha = 0.6,
+            lwd = 0.8,
+            aes(group = factor(ring_number.x),
+                lty = factor(ring_number.x)),
+            # shape = NA,
+            show.legend = FALSE) +
   geom_point(
-             alpha=0.8,
-             size=3,
-             show.legend =TRUE) +
-  geom_line() +
-  theme_bw()
-p <- p  + scale_colour_manual(values=col_3)
+    alpha=0.8,
+    size=3,
+    show.legend =TRUE) +
+  theme_bw()  + guides(group=FALSE, lty=FALSE) 
+# p <- p  + scale_colour_manual(values=col_3)
 p <- p  + labs(list(x = "Date (day of June)", y =  "Dive + PDI time (% of day)", shape = "Device", col = "Order", fill = "Order"))
 p <- p + theme(legend.key.width=unit(2,"line"))
-p
-
+p +scale_y_continuous(labels = percent,
+                                       breaks = seq(0,.30, .05),
+                      limits = c(0,0.3))
+# ?scale_y_continuous
 ggsave(filename = "activty_dive_pdi_date.svg", width = 6, height = 4,
        units = "in")
 ggsave(filename = "activty_dive_pdi_date.png", width = 6, height = 4,
