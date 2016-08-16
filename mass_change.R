@@ -205,44 +205,59 @@ KRSumFun <- function(object, objectDrop, ...) {
 
 # deployments$device.status
 # Device deployments only ----
-mod.devices <- lmer( mass_resid_change_last_day ~
+mods <- list()
+mods[1] <- lmer( mass_resid_change_last_day ~
                         device.status*group +
         (1|Metal),
       data = deployments[deployments$TYPE == "device" & deployments$Capture != 1,])
 
-mod.devices2 <- lmer( mass_resid_change_last_day ~
+mods[2] <- lmer( mass_resid_change_last_day ~
                        device.status+group +
                        (1|Metal),
                      data = deployments[deployments$TYPE == "device" & deployments$Capture != 1,])
 
-mod.devices3 <- lmer( mass_resid_change_last_day ~
+# anova(mods[[1]], mods[[2]])
+
+mods[3] <- lmer( mass_resid_change_last_day ~
                         device.status +
                         (1|Metal),
                       data = deployments[deployments$TYPE == "device" & deployments$Capture != 1,])
 
-mod.devices4 <- lmer( mass_resid_change_last_day ~
+mods[4] <- lmer( mass_resid_change_last_day ~
                         1 +
                         (1|Metal),
                       data = deployments[deployments$TYPE == "device" & deployments$Capture != 1,])
 
-mod.devices5 <- lmer( mass_resid_change_last_day ~
+mods[5] <- lmer( mass_resid_change_last_day ~
                         group +
                         (1|Metal),
                       data = deployments[deployments$TYPE == "device" & deployments$Capture != 1,])
 
-summary(mod.devices)
+summary(mods[[1]])
 
-a <- AICc(mod.devices)
-AICc(mod.devices2) -a
-AICc(mod.devices3) -a
-AICc(mod.devices4) - a
-AICc(mod.devices5) -a 
+# a <- AICc(mod.devices)
+# AICc(mod.devices2) -a
+# AICc(mod.devices3) -a
+# AICc(mod.devices4) - a
+# AICc(mod.devices5) -a 
+# 
+# r.squaredGLMM(mod.devices)
+# r.squaredGLMM(mod.devices2)
+# r.squaredGLMM(mod.devices3)
+# r.squaredGLMM(mod.devices4)
+# r.squaredGLMM(mod.devices5)
 
-r.squaredGLMM(mod.devices)
-r.squaredGLMM(mod.devices2)
-r.squaredGLMM(mod.devices3)
-r.squaredGLMM(mod.devices4)
-r.squaredGLMM(mod.devices5)
+# Summarise information from the models
+mods.aicc <- sapply(mods, AICc)
+mods.aicc.dif <- mods.aicc-min(mods.aicc)
+mods.r2m <- sapply(mods, r.squaredGLMM)
+t(mods.r2m)
+
+mods.fit.df <- cbind.data.frame(c(1:length(mods)),mods.aicc,
+                                         mods.aicc.dif,
+                                         t(mods.r2m))
+names(mods.fit.df) <- c("mod", "AICc", "dAICc", "R2m", "R2c")
+
 
 
 ggplot(aes(y = mass_resid_change_last_day, x = device.status,
