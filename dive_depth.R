@@ -101,42 +101,6 @@ models[[1]] <- glmer(depth_max_m_log10 ~
 
 
 
-# 
-# mod.n <- glmer(depth_max_m ~
-#         GPS_TDR_order*type +
-#         june_day +
-#         day_period +
-#         (1|ring_number/june_day/dive_bout_id),
-#       data = dives_df)
-# 
-# mod.ln <- glmer(depth_max_m_ln ~
-#         GPS_TDR_order*type +
-#         june_day +
-#         day_period +
-#         (1|ring_number/june_day/dive_bout_id),
-#       data = dives_df)
-# 
-# mod.log10 <- glmer(depth_max_m_log10 ~
-#         GPS_TDR_order*type +
-#         june_day +
-#         day_period +
-#         (1|ring_number/june_day/dive_bout_id),
-#       data = dives_df)
-# 
-# mod.sqrt <- glmer(depth_max_m_sqrt ~
-#         GPS_TDR_order*type +
-#         june_day +
-#         day_period +
-#         (1|ring_number/june_day/dive_bout_id),
-#       data = dives_df)
-# 
-# r.squaredGLMM(mod.n)
-# r.squaredGLMM(mod.ln)
-# r.squaredGLMM(mod.log10)
-# r.squaredGLMM(mod.sqrt)
-
-
-
 models[[2]] <- glmer(depth_max_m_log10 ~
                        GPS_TDR_order+type +
                        june_day +
@@ -324,15 +288,8 @@ ggsave(filename = "change_depth_mean_se.png", width = 4, height = 4,
        units = "in")
 ggsave(filename = "change_depth_mean_se.pdf", width = 4, height = 4,
        units = "in")
-# 
-# ggplot(data=type.means.ind, aes(x= type, y=depth_log_mean,
-#                                 group = ring_number, colour = GPS_TDR_order)) + 
-#   geom_errorbar(aes(ymin=depth_log_mean-depth_log_SE, ymax=depth_log_mean+depth_log_SE), width=.1) +
-#   geom_line() +
-#   geom_point() +
-#   scale_colour_manual(values=col_3[1:2]) +
-#   scale_fill_manual(values=col_3[1:2]) +
-#   theme_new
+
+
 
 hist(dives_df$depth_max_m, breaks = 100)
 hist(log10(dives_df$depth_max_m), breaks = 100)
@@ -346,7 +303,7 @@ dive_type_fun <- function(x){
 }
 
 dives_df$dive_type <- sapply(dives_df$depth_max_m, dive_type_fun)
-summary(as.factor(dive_type))
+summary(as.factor(dives_df$dive_type))
 
 ggplot(data=dives_df, aes(x=type, fill=dive_type)) + 
   geom_bar() + facet_wrap(~ GPS_TDR_order + ring_number, nrow = 2) +
@@ -360,20 +317,21 @@ ggsave(filename = "p_types_of_dive.pdf", width = 8, height = 5,
        units = "in")
 
 
-m <- ggplot(dives_df, aes(x = depth_max_m))
-m <- m + geom_histogram(colour = "dark grey", fill = "grey", binwidth = 2)
+m <- ggplot(dives_df, aes(x = depth_max_m, ..density..))
+m <- m + geom_histogram(colour = "dark grey",
+                        fill = "grey", binwidth = 2,)
 m <- m + facet_grid(type ~ GPS_TDR_order)
 m <- m + geom_vline(xintercept = c(13, 50),
                     lty = 2, lwd = 1.5, alpha = 0.6, col = "red")
 m + theme_new +  labs(list(x = "Dive depth (m)"))
-ggsave(filename = "dive_depth_hist.svg", width = 6, height = 5,
+ggsave(filename = "dive_depth_hist_density.svg", width = 6, height = 5,
        units = "in")
-ggsave(filename = "dive_depth_hist.png", width = 6, height = 5,
+ggsave(filename = "dive_depth_hist_density.png", width = 6, height = 5,
        units = "in")
-ggsave(filename = "dive_depth_hist.pdf", width = 6, height = 5,
+ggsave(filename = "dive_depth_hist_density.pdf", width = 6, height = 5,
        units = "in")
 
-
+# ??geom_histogram
 # Logistic models for dives type -------
 dives_df$dive_type_bool <- dives_df$dive_type
 # Ignore shallow dives
@@ -400,14 +358,7 @@ models_logist[[1]] <- glmer(dive_type_bool ~
                        day_period + (1|idx)+
                        (1|ring_number/june_day/dive_bout_id),
                      data = dives_df_NAN, family=binomial(link='logit'))
-# summary(models_logist[[1]])
-# models_logist[[7]] <- glmer(dive_type_bool ~
-#                               GPS_TDR_order*type +
-#                               june_day +
-#                               day_period + (1|dive_bout_id) +
-#                               (1|ring_number/june_day),
-#                             data = dives_df_NAN, family=binomial(link='logit'))
-# summary(models_logist[[7]])
+
 
 models_logist[[2]] <- glmer(dive_type_bool ~
                        GPS_TDR_order+type +
@@ -441,17 +392,17 @@ models_logist[[6]] <- glmer(dive_type_bool ~
                        (1|ring_number/june_day/dive_bout_id),
                      data = dives_df_NAN, family=binomial(link='logit'))
 
-# Based on this: https://ecologyforacrowdedplanet.wordpress.com/2013/08/27/r-squared-in-mixed-models-the-easy-way/
-r2fun <- function(x){
-  Vf <- var(model.matrix(x) %*% fixef(x))
-  Vr <- sum(unlist(print(VarCorr(x),comp="Variance")))
-  vresid <- var(resid(x))
-  # Vdist <- pi^2 / 3
-  Vtotal <- Vf + Vr + vresid
-  R2m <- Vf / (Vtotal)
-  R2c <- (Vf + Vr) / (Vtotal)
-  return(c(R2m,R2c))
-}
+# # Based on this: https://ecologyforacrowdedplanet.wordpress.com/2013/08/27/r-squared-in-mixed-models-the-easy-way/
+# r2fun <- function(x){
+#   Vf <- var(model.matrix(x) %*% fixef(x))
+#   Vr <- sum(unlist(print(VarCorr(x),comp="Variance")))
+#   vresid <- var(resid(x))
+#   # Vdist <- pi^2 / 3
+#   Vtotal <- Vf + Vr + vresid
+#   R2m <- Vf / (Vtotal)
+#   R2c <- (Vf + Vr) / (Vtotal)
+#   return(c(R2m,R2c))
+# }
 
 # Summarise information from the models_logist
 models_logist.aicc <- sapply(models_logist, AICc)
@@ -1089,3 +1040,14 @@ ggplot(dives_pdi, aes(x = (depth_max_m), y = descent_rate,
   geom_smooth(method = "lm", se = TRUE) +
   ylim(c(0.3,1.5))
 
+
+
+
+plot(dives_df$pdi~ dives_df$duration_s,
+     ylim = c(0,200))
+
+
+summary(as.factor(dives_df$day_period))
+hist(dives$sun_elevation, breaks = 40)
+median(dives$sun_elevation)
+plot(dives$sun_elevation~dives$date_time)
