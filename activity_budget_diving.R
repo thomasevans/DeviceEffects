@@ -119,6 +119,7 @@ fun_time <- function(sun_r, sun_s, t){
 dives$time_of_day <- mapply(fun_time, sun_r = sr_90, sun_s = ss_90, t = dives$date_time)
 summary(as.factor(dives$time_of_day))
 
+# Check this looks correct
 plot(dives$sun_elevation~dives$date_time, col = as.factor(dives$time_of_day))
 
 # * p(diving) etc -----
@@ -225,7 +226,7 @@ ggplot(day.df.comb,
   geom_point(pch = 21, position = position_jitterdodge(),
              alpha = 0.6)+
   labs(list(x = "Group",
-            y = "% daytime diving + PDI",
+            y = "P(day active) %",
             fill = "")) +
   theme_new +
   scale_colour_manual(values=col_3[1:3]) +
@@ -246,6 +247,8 @@ ggsave(filename = "activty_dive_pdi_boxplot_no_legend_day.pdf", width = 4, heigh
 
 
 hist(day.df.comb$dive_pdi_p, breaks = 10)
+
+hist(day.df.comb$dive_pdi_p_day, breaks = 10)
 
 
 library(scales)
@@ -435,4 +438,84 @@ qqmath(models[[1]])
   
 
 
+# P(activity) daytime ------
+
+models <- list()
+# p(day) ~ device status + order + status:order + sex + julian date + (1|ring_number)
+
+
+models[[1]] <- glmer(dive_pdi_p_day ~
+                       GPS_TDR_order*type +
+                       june_day +
+                       (1|ring_number.x),
+                     # family = binomial,
+                     data = day.df.comb)
+# plot(models[[1]])
+
+
+# day.df.comb$ring_number.x
+
+models[[2]] <- glmer(dive_pdi_p_day ~
+                       GPS_TDR_order + type +
+                       june_day +
+                       (1|ring_number.x),
+                     data = day.df.comb)
+
+models[[3]] <- glmer(dive_pdi_p_day ~
+                       GPS_TDR_order +
+                       june_day +
+                       (1|ring_number.x),
+                     data = day.df.comb)
+
+models[[4]] <- glmer(dive_pdi_p_day ~
+                       type +
+                       june_day +
+                       (1|ring_number.x),
+                     data = day.df.comb)
+
+models[[5]] <- glmer(dive_pdi_p_day ~
+                       june_day +
+                       (1|ring_number.x),
+                     data = day.df.comb)
+
+models[[6]] <- glmer(dive_pdi_p_day ~
+                       1 +
+                       (1|ring_number.x),
+                     data = day.df.comb)
+
+
+
+# Summarise information from the models
+models.aicc <- sapply(models, AICc)
+models.aicc.dif <- models.aicc-min(models.aicc)
+models.r2m <- sapply(models, r.squaredGLMM)
+t(models.r2m)
+
+models.fit.df <- cbind.data.frame(c(1:length(models)),models.aicc,
+                                  models.aicc.dif,
+                                  t(models.r2m))
+names(models.fit.df) <- c("mod", "AICc", "dAICc", "R2m", "R2c")
+models.fit.df
+
+# Significance for dropped terms
+drop1(models[[5]], test = "user", sumFun = KRSumFun)
+
+# Cite: Halekoh, U., and Højsgaard, S. (2014). A kenward-roger approximation and parametric bootstrap methods for tests in linear mixed models–the R package pbkrtest. Journal of Statistical Software 59, 1–30.
+
+# "The result could reported as a Kenward-Roger corrected test with F(1, 118.5) = 16.17, p = .0001024"
+# From: https://seriousstats.wordpress.com/tag/kenward-roger-approximation/
+
+
+# Confidence intervals + coeficients
+model_va_coef <- summary(models[[2]])$coef[, 1]
+model_va_ci <- confint(models[[2]], method="Wald")
+model_va_par_df <- cbind.data.frame(model_va_coef,model_va_ci[-c(1:4),])
+
+summary(models[[1]])
+# Check model behaviour
+plot(models[[1]])
+qqmath(models[[1]])
+
+plot(models[[6]])
+qqmath(models[[6]])
 
