@@ -1051,3 +1051,117 @@ summary(as.factor(dives_df$day_period))
 hist(dives$sun_elevation, breaks = 40)
 median(dives$sun_elevation)
 plot(dives$sun_elevation~dives$date_time)
+
+
+
+# SST --------
+
+range(dives_df$temp_c_start)
+hist(dives_df$temp_c_start, breaks = 100)
+summary(dives_df$temp_c_start)
+
+# Exclude small number of dives with extreme high values
+dives_df_sst <- dives_df[dives_df$temp_c_start< 20 &
+                           dives_df$pause_pre_s < 200 &
+                           dives_df$pause_pre_s != 0,]
+
+hist(dives_df_sst$pause_pre_s, xlim = c(0,100), breaks = 10000)
+summary(dives_df_sst$pause_pre_s <15)
+
+f <- dives_df_sst$pause_pre_s <30
+par(mfrow=c(2,1))
+hist(dives_df_sst$temp_c_start[f], xlim = c(8,20), breaks = 100)
+hist(dives_df_sst$temp_c_start[!f], xlim = c(8,20), breaks = 100)
+summary(dives_df_sst$temp_c_start)
+summary(dives_df_sst$temp_c_start[!f])
+summary(dives_df_sst$temp_c_start[f])
+
+summary(lm(dives_df_sst$temp_c_start~dives_df_sst$pause_pre_s))
+par(mfrow=c(1,1))
+plot(dives_df_sst$temp_c_start~dives_df_sst$pause_pre_s)
+lines(lowess(dives_df_sst$temp_c_start~dives_df_sst$pause_pre_s, f =0.05), col="blue") 
+# ?lowess
+models <- list()
+
+
+models[[1]] <- glmer(temp_c_start ~
+                       GPS_TDR_order*type +
+                       june_day +
+                       day_period +
+                       (1|ring_number/june_day/dive_bout_id),
+                     data = dives_df_sst)
+
+
+
+models[[2]] <- glmer(temp_c_start ~
+                       GPS_TDR_order+type +
+                       june_day +
+                       day_period +
+                       (1|ring_number/june_day/dive_bout_id),
+                     data = dives_df_sst)
+
+models[[3]] <- glmer(temp_c_start ~
+                       GPS_TDR_order +
+                       june_day +
+                       day_period +
+                       (1|ring_number/june_day/dive_bout_id),
+                     data = dives_df_sst)
+
+models[[4]] <- glmer(temp_c_start ~
+                       type +
+                       june_day +
+                       day_period +
+                       (1|ring_number/june_day/dive_bout_id),
+                     data = dives_df_sst)
+
+models[[5]] <- glmer(temp_c_start ~
+                       june_day +
+                       day_period +
+                       (1|ring_number/june_day/dive_bout_id),
+                     data = dives_df_sst)
+
+models[[6]] <- glmer(temp_c_start ~
+                       1 +
+                       (1|ring_number/june_day/dive_bout_id),
+                     data = dives_df_sst)
+
+
+
+# Summarise information from the models
+models.aicc <- sapply(models, AICc)
+models.aicc.dif <- models.aicc-min(models.aicc)
+
+models.aic <- sapply(models, AIC)
+models.aic.dif <- models.aic-min(models.aic)
+
+
+models.r2m <- sapply(models, r.squaredGLMM)
+t(models.r2m)
+# MuMIn::r.squaredGLMM
+models.fit.df <- cbind.data.frame(c(1:length(models)),models.aicc,
+                                  models.aicc.dif,
+                                  models.aic,
+                                  models.aic.dif,
+                                  t(models.r2m))
+names(models.fit.df) <- c("mod", "AICc", "dAICc",
+                          "AIC", "dAIC", "R2m", "R2c")
+
+
+# Significance for dropped terms
+drop1(models[[1]], test = "user", sumFun = KRSumFun)
+
+# Cite: Halekoh, U., and Højsgaard, S. (2014). A kenward-roger approximation and parametric bootstrap methods for tests in linear mixed models–the R package pbkrtest. Journal of Statistical Software 59, 1–30.
+
+# "The result could reported as a Kenward-Roger corrected test with F(1, 118.5) = 16.17, p = .0001024"
+# From: https://seriousstats.wordpress.com/tag/kenward-roger-approximation/
+
+
+# Confidence intervals + coeficients
+model_va_coef <- summary(models[[1]])$coef[, 1]
+model_va_ci <- confint(models[[1]], method="Wald")
+model_va_par_df <- cbind.data.frame(model_va_coef,model_va_ci[-c(1:4),])
+
+summary(models[[1]])
+# Check model behaviour
+plot(models[[1]])
+qqmath(models[[1]])
