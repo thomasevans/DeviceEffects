@@ -206,7 +206,7 @@ KRSumFun <- function(object, objectDrop, ...) {
 # deployments$device.status
 # Device deployments only ----
 mods <- list()
-mods[1] <- lmer( mass_resid_change_last_day ~
+mods[1] <- lmer(mass_resid_change_last_day ~
                         device.status*group +
         (1|Metal),
       data = deployments[deployments$TYPE == "device" & deployments$Capture != 1,])
@@ -258,7 +258,9 @@ mods.fit.df <- cbind.data.frame(c(1:length(mods)),mods.aicc,
                                          t(mods.r2m))
 names(mods.fit.df) <- c("mod", "AICc", "dAICc", "R2m", "R2c")
 
-
+# Check model behaviour
+plot(mods[[1]])
+qqmath(mods[[1]])
 
 ggplot(aes(y = mass_resid_change_last_day, x = device.status,
            fill = group),
