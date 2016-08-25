@@ -99,6 +99,14 @@ models[[1]] <- glmer(depth_max_m_log10 ~
                           (1|ring_number/june_day/dive_bout_id),
                           data = dives_df)
 
+# models[[2]] <- glmer(depth_max_m_log10 ~
+#                        GPS_TDR_order*type +
+#                        june_day +
+#                        day_period +
+#                        (1|ring_number/june_day:dive_bout_id),
+#                      data = dives_df)
+summary(models[[1]])
+# summary(models[[2]])
 
 
 models[[2]] <- glmer(depth_max_m_log10 ~
@@ -270,7 +278,7 @@ ggplot(data=type.means.ind, aes(x= type, y=depth_mean,
   geom_point(alpha = 0.3) +
   geom_errorbar(data = type.means, aes(ymin=depth_mean-depth_SE,
                                        ymax=depth_mean+depth_SE),
-                width=.2, , alpha = 0.8, lwd = 1) +
+                width=.2, alpha = 0.8, lwd = 1) +
   geom_line(data = type.means, alpha = 0.8, lwd = 1) +
   geom_point(data = type.means, alpha = 0.8)+
   scale_colour_manual(values=col_3[1:2]) +
@@ -332,6 +340,8 @@ ggsave(filename = "dive_depth_hist_density.pdf", width = 6, height = 5,
        units = "in")
 
 # ??geom_histogram
+
+
 # Logistic models for dives type -------
 dives_df$dive_type_bool <- dives_df$dive_type
 # Ignore shallow dives
@@ -358,6 +368,20 @@ models_logist[[1]] <- glmer(dive_type_bool ~
                        day_period + (1|idx)+
                        (1|ring_number/june_day/dive_bout_id),
                      data = dives_df_NAN, family=binomial(link='logit'))
+plot(models_logist[[1]])
+qqmath(models_logist[[1]])
+
+# 
+# models_logist[[2]] <- glmer(dive_type_bool ~
+#                               GPS_TDR_order*type +
+#                               june_day *
+#                               day_period +
+#                               (1|idx)+
+#                               (1|ring_number/june_day/dive_bout_id),
+#                             data = dives_df_NAN, family=binomial(link='logit'))
+# plot(models_logist[[2]])
+# qqmath(models_logist[[2]])
+
 
 
 models_logist[[2]] <- glmer(dive_type_bool ~
@@ -529,7 +553,7 @@ hist(dives_pdi$dive_efficiency)
 models <- list()
 
 
-models.2[[1]] <- glmer(dive_efficiency ~
+models[[1]] <- glmer(dive_efficiency ~
                        GPS_TDR_order*type +
                        depth_max_m +
                        june_day +
@@ -580,12 +604,17 @@ models[[6]] <- glmer(dive_efficiency ~
 models.aicc <- sapply(models, AICc)
 models.aicc.dif <- models.aicc-min(models.aicc)
 models.r2m <- sapply(models, r.squaredGLMM)
-t(models.r2m)
-MuMIn::r.squaredGLMM
+models.bic <- sapply(models, BIC)
+models.bic.dif <- models.bic-min(models.bic)
+# t(models.r2m)
+# MuMIn::r.squaredGLMM
 models.fit.df <- cbind.data.frame(c(1:length(models)),models.aicc,
                                   models.aicc.dif,
+                                  models.bic,
+                                  models.bic.dif,
                                   t(models.r2m))
-names(models.fit.df) <- c("mod", "AICc", "dAICc", "R2m", "R2c")
+names(models.fit.df) <- c("mod", "AICc", "dAICc",
+                          "BIC", "dBIC", "R2m", "R2c")
 
 anova(models[[4]],models[[5]])
 
@@ -698,16 +727,35 @@ models[[6]] <- glmer(pdi~
 
 
 
-# Summarise information from the models
+
+# # Summarise information from the models
+
 models.aicc <- sapply(models, AICc)
 models.aicc.dif <- models.aicc-min(models.aicc)
 models.r2m <- sapply(models, r.squaredGLMM)
-t(models.r2m)
+models.bic <- sapply(models, BIC)
+models.bic.dif <- models.bic-min(models.bic)
+# t(models.r2m)
 # MuMIn::r.squaredGLMM
 models.fit.df <- cbind.data.frame(c(1:length(models)),models.aicc,
                                   models.aicc.dif,
+                                  models.bic,
+                                  models.bic.dif,
                                   t(models.r2m))
-names(models.fit.df) <- c("mod", "AICc", "dAICc", "R2m", "R2c")
+names(models.fit.df) <- c("mod", "AICc", "dAICc",
+                          "BIC", "dBIC", "R2m", "R2c")
+
+# 
+# # Summarise information from the models
+# models.aicc <- sapply(models, AICc)
+# models.aicc.dif <- models.aicc-min(models.aicc)
+# models.r2m <- sapply(models, r.squaredGLMM)
+# t(models.r2m)
+# # MuMIn::r.squaredGLMM
+# models.fit.df <- cbind.data.frame(c(1:length(models)),models.aicc,
+#                                   models.aicc.dif,
+#                                   t(models.r2m))
+# names(models.fit.df) <- c("mod", "AICc", "dAICc", "R2m", "R2c")
 
 anova(models[[1]],models[[5]])
 anova(models[[1]],models[[4]])
@@ -1165,3 +1213,61 @@ summary(models[[1]])
 # Check model behaviour
 plot(models[[1]])
 qqmath(models[[1]])
+
+
+
+# Post vs. pre interval ------
+
+# Post
+dives_pdi <- dives_df[!(dives_df$divetype %in% c("last", "single")),]
+hist(dives_pdi$pdi, breaks = 100)
+hist(dives_pdi$pdi, breaks = 1000, xlim = c(0,400))
+
+# Remove extreme values for pdi and shallow dives
+dives_pdi <- dives_pdi[dives_pdi$pdi < 300 &
+                         dives_pdi$depth_max_m > 10,]
+dives_pdi <- dives_pdi[!is.na(dives_pdi$pdi),]
+dives_pdi <- dives_pdi[(dives_pdi$pdi) != 0,]
+
+range(dives_pdi$pdi)
+
+
+# Stats models
+# models <- list()
+
+
+model.post <- glmer(pdi~
+                       GPS_TDR_order*type +
+                       depth_max_m +
+                       june_day +
+                       day_period +
+                       (1|ring_number/june_day/dive_bout_id),
+                     data = dives_pdi)
+
+
+# Pre
+
+
+# Post
+dives_pdi_pre <- dives_df[!(dives_df$divetype %in% c("last", "single", "first")),]
+hist(dives_pdi_pre$pause_pre_s, breaks = 100)
+hist(dives_pdi_pre$pause_pre_s, breaks = 1000, xlim = c(0,400))
+
+# Remove extreme values for pdi and shallow dives
+dives_pdi_pre <- dives_pdi[dives_pdi$pause_pre_s < 300 &
+                         dives_pdi$depth_max_m > 10,]
+dives_pdi_pre <- dives_pdi_pre[!is.na(dives_pdi_pre$pause_pre_s),]
+dives_pdi_pre <- dives_pdi_pre[(dives_pdi_pre$pause_pre_s) != 0,]
+
+model.pre <- glmer(pause_pre_s~
+                      GPS_TDR_order*type +
+                      depth_max_m +
+                      june_day +
+                      day_period +
+                      (1|ring_number/june_day/dive_bout_id),
+                    data = dives_pdi_pre)
+
+# dives_pdi$
+
+r.squaredGLMM(model.post)
+r.squaredGLMM(model.pre)
