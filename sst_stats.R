@@ -206,44 +206,120 @@ models <- list()
 
 models[[1]] <- glmer(sst_median_dev ~
                        GPS_TDR_order*type +
+                       chick_age*type +
                        june_day +
                        day_period +
                        sst_day_cycle + (1|ring_number/june_day),
                      data = bouts_df_x)
 
-
-
 models[[2]] <- glmer(sst_median_dev ~
-                       GPS_TDR_order+type +
+                       GPS_TDR_order + type +
+                       chick_age*type +
                        june_day +
                        day_period +
                        sst_day_cycle + (1|ring_number/june_day),
                      data = bouts_df_x)
 
 models[[3]] <- glmer(sst_median_dev ~
-                       GPS_TDR_order +
+                       GPS_TDR_order*type +
+                       chick_age + type +
                        june_day +
                        day_period +
                        sst_day_cycle + (1|ring_number/june_day),
                      data = bouts_df_x)
 
 models[[4]] <- glmer(sst_median_dev ~
-                       type +
+                       # GPS_TDR_order*type +
+                       chick_age*type +
                        june_day +
                        day_period +
                        sst_day_cycle + (1|ring_number/june_day),
                      data = bouts_df_x)
 
 models[[5]] <- glmer(sst_median_dev ~
+                       GPS_TDR_order + type +
+                       chick_age +
                        june_day +
                        day_period +
                        sst_day_cycle + (1|ring_number/june_day),
                      data = bouts_df_x)
 
 models[[6]] <- glmer(sst_median_dev ~
-                       1 +
-                       (1|ring_number/june_day),
+                       GPS_TDR_order +
+                       chick_age +
+                       june_day +
+                       day_period +
+                       sst_day_cycle + (1|ring_number/june_day),
                      data = bouts_df_x)
+
+models[[7]] <- glmer(sst_median_dev ~
+                       type +
+                       chick_age +
+                       june_day +
+                       day_period +
+                       sst_day_cycle + (1|ring_number/june_day),
+                     data = bouts_df_x)
+
+models[[8]] <- glmer(sst_median_dev ~
+                       # GPS_TDR_order*type +
+                       chick_age +
+                       june_day +
+                       day_period +
+                       sst_day_cycle + (1|ring_number/june_day),
+                     data = bouts_df_x)
+
+models[[9]] <- glmer(sst_median_dev ~
+                       1 + (1|ring_number/june_day),
+                     data = bouts_df_x)
+
+
+# models[[10]] <- glmer(sst_median_dev ~
+#                        GPS_TDR_order*type +
+#                        # chick_age*type +
+#                        june_day +
+#                        day_period +
+#                        sst_day_cycle + (1|ring_number/june_day),
+#                      data = bouts_df_x)
+# 
+# models[[11]] <- glmer(sst_median_dev ~
+#                         GPS_TDR_order*type +
+#                         chick_age +
+#                         june_day +
+#                         day_period +
+#                         sst_day_cycle + (1|ring_number/june_day),
+#                       data = bouts_df_x)
+# 
+# models[[2]] <- glmer(sst_median_dev ~
+#                        GPS_TDR_order+type +
+#                        june_day +
+#                        day_period +
+#                        sst_day_cycle + (1|ring_number/june_day),
+#                      data = bouts_df_x)
+# 
+# models[[3]] <- glmer(sst_median_dev ~
+#                        GPS_TDR_order +
+#                        june_day +
+#                        day_period +
+#                        sst_day_cycle + (1|ring_number/june_day),
+#                      data = bouts_df_x)
+# 
+# models[[4]] <- glmer(sst_median_dev ~
+#                        type +
+#                        june_day +
+#                        day_period +
+#                        sst_day_cycle + (1|ring_number/june_day),
+#                      data = bouts_df_x)
+# 
+# models[[5]] <- glmer(sst_median_dev ~
+#                        june_day +
+#                        day_period +
+#                        sst_day_cycle + (1|ring_number/june_day),
+#                      data = bouts_df_x)
+# 
+# models[[6]] <- glmer(sst_median_dev ~
+#                        1 +
+#                        (1|ring_number/june_day),
+#                      data = bouts_df_x)
 
 
 
