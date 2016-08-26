@@ -106,6 +106,32 @@ bouts_df$june_day <- as.numeric(format(bouts_df$date_time, "%d"))
 hist(bouts_df$june_day)
 
 
+
+
+
+# Get breeding data ----
+chick.dates <- sqlQuery(gps.db,
+                        query = "SELECT guillemots_GPS_TDR_breeding.ring_number, guillemots_GPS_TDR_breeding.hatch, guillemots_GPS_TDR_breeding.hatch_unc, guillemots_GPS_TDR_breeding.hatch_june_day, guillemots_GPS_TDR_breeding.chick_age_day_june_conv, guillemots_GPS_TDR_breeding.notes
+FROM guillemots_GPS_TDR_breeding
+ORDER BY guillemots_GPS_TDR_breeding.ring_number;
+
+                            ",
+                        as.is = TRUE)
+
+
+
+bouts_df <- merge(bouts_df, chick.dates,
+                  by = "ring_number")
+
+
+
+
+
+bouts_df$chick_age <- bouts_df$june_day-bouts_df$hatch_june_day
+hist(bouts_df$chick_age, breaks = 100)
+
+
+
 # SST data from NOAA -----
 
 # Functions to look at this data, from: https://github.com/millerlp/Misc_R_scripts/blob/master/NOAA_OISST_ncdf4.R
