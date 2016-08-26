@@ -175,6 +175,26 @@ boxplot(day.df.comb$dive_pdi_p~day.df.comb$type+ day.df.comb$GPS_TDR_order)
 boxplot(day.df.comb$dive_pdi_p_day~day.df.comb$type+ day.df.comb$GPS_TDR_order)
 
 
+# Add chick age -------
+
+chick.dates <- sqlQuery(gps.db,
+                        query = "SELECT guillemots_GPS_TDR_breeding.ring_number, guillemots_GPS_TDR_breeding.hatch, guillemots_GPS_TDR_breeding.hatch_unc, guillemots_GPS_TDR_breeding.hatch_june_day, guillemots_GPS_TDR_breeding.chick_age_day_june_conv, guillemots_GPS_TDR_breeding.notes
+FROM guillemots_GPS_TDR_breeding
+ORDER BY guillemots_GPS_TDR_breeding.ring_number;
+
+                            ",
+                        as.is = TRUE)
+
+names(day.df.comb)[names(day.df.comb) == "ring_number.x"] <- "ring_number"
+
+day.df.comb <- merge(day.df.comb, chick.dates, by = c("ring_number"))
+
+
+day.df.comb$chick_age <- day.df.comb$june_day-day.df.comb$hatch_june_day
+hist(day.df.comb$chick_age, breaks = 100)
+
+
+
 # Make some plots -----
 col_3 <- c("#1b9e77","#d95f02", "#7570b3", "grey60")
 
@@ -260,8 +280,8 @@ p <- ggplot(day.df.comb, aes(june_day, dive_pdi_p,
   scale_colour_manual(values=col_3) +
   geom_line(alpha = 0.6,
             lwd = 0.8,
-            aes(group = factor(ring_number.x),
-                lty = factor(ring_number.x)),
+            aes(group = factor(ring_number),
+                lty = factor(ring_number)),
             # shape = NA,
             show.legend = FALSE) +
   geom_point(
@@ -285,6 +305,37 @@ ggsave(filename = "activty_dive_pdi_date.pdf", width = 6, height = 4,
 
 
 
+# By chick-age
+
+
+p <- ggplot(day.df.comb, aes(chick_age, dive_pdi_p,
+                             colour = factor(GPS_TDR_order),
+                             shape = type)) +
+  scale_colour_manual(values=col_3) +
+  geom_line(alpha = 0.6,
+            lwd = 0.8,
+            aes(group = factor(ring_number),
+                lty = factor(ring_number)),
+            # shape = NA,
+            show.legend = FALSE) +
+  geom_point(
+    alpha=0.8,
+    size=3,
+    show.legend =TRUE) +
+  theme_bw()  + guides(group=FALSE, lty=FALSE) 
+# p <- p  + scale_colour_manual(values=col_3)
+p <- p  + labs(list(x = "Chick age (days)", y =  "Dive + PDI time (% of day)", shape = "Device", col = "Order", fill = "Order"))
+p <- p + theme(legend.key.width=unit(2,"line"))
+p +scale_y_continuous(labels = percent,
+                      breaks = seq(0,.30, .05),
+                      limits = c(0,0.3))
+ggsave(filename = "activty_dive_pdi_chick_age.svg", width = 6, height = 4,
+       units = "in")
+ggsave(filename = "activty_dive_pdi_chick_age.png", width = 6, height = 4,
+       units = "in")
+ggsave(filename = "activty_dive_pdi_chick_age.pdf", width = 6, height = 4,
+       units = "in")
+
 
 # Propotion day active
 
@@ -294,8 +345,8 @@ p <- ggplot(day.df.comb, aes(june_day, dive_pdi_p_day,
   scale_colour_manual(values=col_3) +
   geom_line(alpha = 0.6,
             lwd = 0.8,
-            aes(group = factor(ring_number.x),
-                lty = factor(ring_number.x)),
+            aes(group = factor(ring_number),
+                lty = factor(ring_number)),
             # shape = NA,
             show.legend = FALSE) +
   geom_point(
@@ -318,9 +369,44 @@ ggsave(filename = "activty_dive_pdi_date_day_P.pdf", width = 6, height = 4,
        units = "in")
 
 
+
+# By chick-age
+
+p <- ggplot(day.df.comb, aes(chick_age, dive_pdi_p_day,
+                             colour = factor(GPS_TDR_order),
+                             shape = type)) +
+  scale_colour_manual(values=col_3) +
+  geom_line(alpha = 0.6,
+            lwd = 0.8,
+            aes(group = factor(ring_number),
+                lty = factor(ring_number)),
+            # shape = NA,
+            show.legend = FALSE) +
+  geom_point(
+    alpha=0.8,
+    size=3,
+    show.legend =TRUE) +
+  theme_bw()  + guides(group=FALSE, lty=FALSE) 
+# p <- p  + scale_colour_manual(values=col_3)
+p <- p  + labs(list(x = "Chick age (days)", y =  "P(day active)", shape = "Device", col = "Order", fill = "Order"))
+p <- p + theme(legend.key.width=unit(2,"line"))
+p +scale_y_continuous(labels = percent,
+                      breaks = seq(0,1, .1),
+                      limits = c(0,1))
+ggsave(filename = "activty_dive_pdi_chick_age_day_P.svg", width = 6, height = 4,
+       units = "in")
+ggsave(filename = "activty_dive_pdi_chick_age_day_P.png", width = 6, height = 4,
+       units = "in")
+ggsave(filename = "activty_dive_pdi_chick_age_day_P.pdf", width = 6, height = 4,
+       units = "in")
+
+
+
+
+
 p <- ggplot(day.df.comb, aes(june_day, dive_time_p*100,
                              colour = GPS_TDR_order,
-                             group = ring_number.x, shape = type)) +
+                             group = ring_number, shape = type)) +
   geom_point(
     alpha=0.8,
     size=3,
@@ -339,10 +425,9 @@ ggsave(filename = "activty_dive_date.png", width = 6, height = 4,
 ggsave(filename = "activty_dive_date.pdf", width = 6, height = 4,
        units = "in")
 
+
+
 # Statistical analysis of PDI time -----
-
-
-
 library(lme4)
 library(arm)
 library(lattice)
@@ -369,39 +454,94 @@ models <- list()
 
 models[[1]] <- glmer(dive_pdi_p ~
                        GPS_TDR_order*type +
+                       type*chick_age+
                        june_day +
-                       (1|ring_number.x),
+                       (1|ring_number),
                      data = day.df.comb)
 
-# day.df.comb$ring_number.x
 
 models[[2]] <- glmer(dive_pdi_p ~
-                       GPS_TDR_order + type +
+                       GPS_TDR_order +
+                       type*chick_age+
                        june_day +
-                       (1|ring_number.x),
+                       (1|ring_number),
                      data = day.df.comb)
 
 models[[3]] <- glmer(dive_pdi_p ~
-                       GPS_TDR_order +
+                       GPS_TDR_order*type +
+                       chick_age+
                        june_day +
-                       (1|ring_number.x),
+                       (1|ring_number),
                      data = day.df.comb)
 
 models[[4]] <- glmer(dive_pdi_p ~
-                       type +
+                       GPS_TDR_order*type +
+                       chick_age+
                        june_day +
-                       (1|ring_number.x),
+                       (1|ring_number),
                      data = day.df.comb)
 
 models[[5]] <- glmer(dive_pdi_p ~
+                       GPS_TDR_order+type +
+                       chick_age+
                        june_day +
-                       (1|ring_number.x),
+                       (1|ring_number),
                      data = day.df.comb)
 
 models[[6]] <- glmer(dive_pdi_p ~
-                       1 +
-                       (1|ring_number.x),
+                       GPS_TDR_order +
+                       chick_age+
+                       june_day +
+                       (1|ring_number),
                      data = day.df.comb)
+
+models[[7]] <- glmer(dive_pdi_p ~
+                       type +
+                       chick_age+
+                       june_day +
+                       (1|ring_number),
+                     data = day.df.comb)
+
+models[[8]] <- glmer(dive_pdi_p ~
+                       chick_age+
+                       june_day +
+                       (1|ring_number),
+                     data = day.df.comb)
+
+models[[9]] <- glmer(dive_pdi_p ~
+                       1 +
+                       (1|ring_number),
+                     data = day.df.comb)
+
+# day.df.comb$ring_number.x
+# 
+# models[[2]] <- glmer(dive_pdi_p ~
+#                        GPS_TDR_order + type +
+#                        june_day +
+#                        (1|ring_number.x),
+#                      data = day.df.comb)
+# 
+# models[[3]] <- glmer(dive_pdi_p ~
+#                        GPS_TDR_order +
+#                        june_day +
+#                        (1|ring_number.x),
+#                      data = day.df.comb)
+# 
+# models[[4]] <- glmer(dive_pdi_p ~
+#                        type +
+#                        june_day +
+#                        (1|ring_number.x),
+#                      data = day.df.comb)
+# 
+# models[[5]] <- glmer(dive_pdi_p ~
+#                        june_day +
+#                        (1|ring_number.x),
+#                      data = day.df.comb)
+# 
+# models[[6]] <- glmer(dive_pdi_p ~
+#                        1 +
+#                        (1|ring_number.x),
+#                      data = day.df.comb)
 
 
 
@@ -418,7 +558,7 @@ names(models.fit.df) <- c("mod", "AICc", "dAICc", "R2m", "R2c")
 
 
 # Significance for dropped terms
-drop1(models[[2]], test = "user", sumFun = KRSumFun)
+drop1(models[[8]], test = "user", sumFun = KRSumFun)
 
 # Cite: Halekoh, U., and Højsgaard, S. (2014). A kenward-roger approximation and parametric bootstrap methods for tests in linear mixed models–the R package pbkrtest. Journal of Statistical Software 59, 1–30.
 
@@ -431,10 +571,10 @@ model_va_coef <- summary(models[[2]])$coef[, 1]
 model_va_ci <- confint(models[[2]], method="Wald")
 model_va_par_df <- cbind.data.frame(model_va_coef,model_va_ci[-c(1:4),])
 
-summary(models[[1]])
+summary(models[[8]])
 # Check model behaviour
-plot(models[[1]])
-qqmath(models[[1]])
+plot(models[[8]])
+qqmath(models[[8]])
   
 
 
@@ -444,45 +584,112 @@ models <- list()
 # p(day) ~ device status + order + status:order + sex + julian date + (1|ring_number)
 
 
+
+
+
+
 models[[1]] <- glmer(dive_pdi_p_day ~
                        GPS_TDR_order*type +
+                       type*chick_age+
                        june_day +
-                       (1|ring_number.x),
-                     # family = binomial,
+                       (1|ring_number),
                      data = day.df.comb)
-# plot(models[[1]])
 
-
-# day.df.comb$ring_number.x
 
 models[[2]] <- glmer(dive_pdi_p_day ~
-                       GPS_TDR_order + type +
+                       GPS_TDR_order +
+                       type*chick_age+
                        june_day +
-                       (1|ring_number.x),
+                       (1|ring_number),
                      data = day.df.comb)
 
 models[[3]] <- glmer(dive_pdi_p_day ~
-                       GPS_TDR_order +
+                       GPS_TDR_order*type +
+                       chick_age+
                        june_day +
-                       (1|ring_number.x),
+                       (1|ring_number),
                      data = day.df.comb)
 
 models[[4]] <- glmer(dive_pdi_p_day ~
-                       type +
+                       GPS_TDR_order*type +
+                       chick_age+
                        june_day +
-                       (1|ring_number.x),
+                       (1|ring_number),
                      data = day.df.comb)
 
 models[[5]] <- glmer(dive_pdi_p_day ~
+                       GPS_TDR_order+type +
+                       chick_age+
                        june_day +
-                       (1|ring_number.x),
+                       (1|ring_number),
                      data = day.df.comb)
 
 models[[6]] <- glmer(dive_pdi_p_day ~
-                       1 +
-                       (1|ring_number.x),
+                       GPS_TDR_order +
+                       chick_age+
+                       june_day +
+                       (1|ring_number),
                      data = day.df.comb)
 
+models[[7]] <- glmer(dive_pdi_p_day ~
+                       type +
+                       chick_age+
+                       june_day +
+                       (1|ring_number),
+                     data = day.df.comb)
+
+models[[8]] <- glmer(dive_pdi_p_day ~
+                       chick_age+
+                       june_day +
+                       (1|ring_number),
+                     data = day.df.comb)
+
+models[[9]] <- glmer(dive_pdi_p_day ~
+                       1 +
+                       (1|ring_number),
+                     data = day.df.comb)
+
+
+# 
+# models[[1]] <- glmer(dive_pdi_p_day ~
+#                        GPS_TDR_order*type +
+#                        june_day +
+#                        (1|ring_number.x),
+#                      # family = binomial,
+#                      data = day.df.comb)
+# # plot(models[[1]])
+# 
+# 
+# # day.df.comb$ring_number.x
+# 
+# models[[2]] <- glmer(dive_pdi_p_day ~
+#                        GPS_TDR_order + type +
+#                        june_day +
+#                        (1|ring_number.x),
+#                      data = day.df.comb)
+# 
+# models[[3]] <- glmer(dive_pdi_p_day ~
+#                        GPS_TDR_order +
+#                        june_day +
+#                        (1|ring_number.x),
+#                      data = day.df.comb)
+# 
+# models[[4]] <- glmer(dive_pdi_p_day ~
+#                        type +
+#                        june_day +
+#                        (1|ring_number.x),
+#                      data = day.df.comb)
+# 
+# models[[5]] <- glmer(dive_pdi_p_day ~
+#                        june_day +
+#                        (1|ring_number.x),
+#                      data = day.df.comb)
+# 
+# models[[6]] <- glmer(dive_pdi_p_day ~
+#                        1 +
+#                        (1|ring_number.x),
+#                      data = day.df.comb)
+# 
 
 
 # Summarise information from the models
@@ -498,7 +705,7 @@ names(models.fit.df) <- c("mod", "AICc", "dAICc", "R2m", "R2c")
 models.fit.df
 
 # Significance for dropped terms
-drop1(models[[5]], test = "user", sumFun = KRSumFun)
+drop1(models[[8]], test = "user", sumFun = KRSumFun)
 
 # Cite: Halekoh, U., and Højsgaard, S. (2014). A kenward-roger approximation and parametric bootstrap methods for tests in linear mixed models–the R package pbkrtest. Journal of Statistical Software 59, 1–30.
 
