@@ -365,3 +365,392 @@ ggsave(filename = "change_mass_resid_date_boxplots2.pdf", width = 4, height = 4,
 # t.test(control_mass, deviced_mass)
 # 
 # boxplot(control_mass, deviced_mass)
+
+
+
+
+# Summary mass change figure ---------
+
+# First figure - all birds actual masses by date
+# - Actual mass ----
+p <- ggplot(deployments, aes(june_day, Mass,
+                             colour = group, group = Metal, shape = group)) +
+  geom_point(aes(june_day, Mass),
+             alpha=0.8,
+             size=3,
+             show.legend =TRUE) +
+  geom_line() +
+  theme_bw()
+p <- p  + scale_colour_manual(values=col_3)
+p <- p  + labs(list(x = "Date (day of June)", y =  "Mass (g)", shape = "Group", col = "Group", fill = "Treatment"))
+p <- p + theme(legend.key.width=unit(2,"line"))
+p <- p + geom_abline(intercept = 973.791, slope = -3.829,
+                     alpha = 0.5,lwd = 2,
+                     lty = 2, col = "grey60")
+
+p
+
+
+
+
+
+# Make plot with base graphics -----
+add.alpha <- function(col, alpha=1){
+  if(missing(col))
+    stop("Please provide a vector of colours.")
+  apply(sapply(col, col2rgb)/255, 2, 
+        function(x) 
+          rgb(x[1], x[2], x[3], alpha=alpha))  
+}
+
+par(ps = 14, cex = 1.5, cex.lab = 2)
+svg("mass_change.svg",
+    width = 6, height = 4, family = "serif")
+# ?cairo_ps
+# Plot base map
+par(mfrow = c(1,1))
+par(mar=c(4, 5, 1, 1) + 0.1)   
+# ?par
+plot(deployments$Mass~deployments$june_day,
+     type = "n",
+     ylab = "Mass (g)",
+     xlab = "Date (day of June)",
+     las = 1,
+     ylim = c(800, 1026),
+     xlim = c(7, 26),
+     cex.lab = 1.3
+)
+grid(lty = 5)
+
+# Control birds
+points(deployments$Mass[!bird.exp]~
+         deployments$june_day[!bird.exp],
+       pch = 21,
+       col = "dark grey",
+       bg = "grey")
+
+# Add Experimental points
+bird.exp <- deployments$group %in% c("+G1", "+G2")
+points(deployments$Mass[bird.exp]~
+         deployments$june_day[bird.exp],
+       pch = 21,
+       bg = "black")
+
+
+deployments <- deployments[order(deployments$Metal),]
+
+# With GPS lines
+segments(deployments$june_day[deployments$group == "+G1" &
+                                deployments$Capture == 1],
+         deployments$Mass[deployments$group == "+G1" &
+                            deployments$Capture == 1],
+         deployments$june_day[deployments$group == "+G1" &
+                                deployments$Capture == 2],
+         deployments$Mass[deployments$group == "+G1" &
+                            deployments$Capture == 2],
+         lwd = 2
+         )
+segments(deployments$june_day[deployments$group == "+G2" &
+                                deployments$Capture == 2],
+         deployments$Mass[deployments$group == "+G2" &
+                            deployments$Capture == 2],
+         deployments$june_day[deployments$group == "+G2" &
+                                deployments$Capture == 3],
+         deployments$Mass[deployments$group == "+G2" &
+                            deployments$Capture == 3],
+         lwd = 2
+)
+
+# With TDR lines
+segments(deployments$june_day[deployments$group == "+G1" &
+                                deployments$Capture == 2],
+         deployments$Mass[deployments$group == "+G1" &
+                            deployments$Capture == 2],
+         deployments$june_day[deployments$group == "+G1" &
+                                deployments$Capture == 3],
+         deployments$Mass[deployments$group == "+G1" &
+                            deployments$Capture == 3],
+         lty = 2,
+         lwd = 2
+)
+segments(deployments$june_day[deployments$group == "+G2" &
+                                deployments$Capture == 1],
+         deployments$Mass[deployments$group == "+G2" &
+                            deployments$Capture == 1],
+         deployments$june_day[deployments$group == "+G2" &
+                                deployments$Capture == 2],
+         deployments$Mass[deployments$group == "+G2" &
+                            deployments$Capture == 2],
+         lty = 2,
+         lwd = 2
+)
+
+# Controls
+segments(deployments$june_day[deployments$group == "C" &
+                                deployments$Capture == 1],
+         deployments$Mass[deployments$group == "C" &
+                            deployments$Capture == 1],
+         deployments$june_day[deployments$group == "C" &
+                                deployments$Capture == 2],
+         deployments$Mass[deployments$group == "C" &
+                            deployments$Capture == 2],
+         col = "dark grey",
+         lty = 2,
+         lwd = 2
+)
+
+points(deployments$Mass[bird.exp & deployments$Capture == 1]~
+         deployments$june_day[bird.exp & deployments$Capture == 1],
+       pch = 21,
+       bg = "grey",
+       col = "black",
+       lwd = 2)
+
+# Colony level mass loss
+abline(coef = c(973.791, -3.829),
+       lwd = 5,
+       col = add.alpha("dark grey", 0.5),
+       lty = 3
+)
+
+
+# Adding key
+legend(x = 21, y = 1028,
+       legend = c(
+         "Exp (1st cap)",
+         "Exp (GPS+TDR)",
+                  "Exp (TDR)",
+                  "Control",
+                  "Colony trend"),
+       col = c("black", "black", "black", "grey", "grey"),
+       pt.bg = c("grey", "black", "black", "dark grey", NA),
+       lty = c(NA, 1, 2, 2, 3),
+       lwd = c(2, 2, 2, 2, 5),
+       pt.lwd = c(1,1,1,1,1),
+       # bg = c("black", "grey"),
+       pch = c(21, 21, 21, 21, NA),
+       y.intersp = 0.9,
+       seg.len = 3,
+       cex = 0.7
+         )
+# ?legend
+dev.off()
+
+
+
+
+# Plot of mass changes ----------
+
+# Colony level trend
+cap1 <- deployments[deployments$Capture == 1,]
+col.mass <- lm(cap1$Mass~cap1$june_day)
+summary(col.mass)
+confint(col.mass)
+# 
+# > confint(col.mass)
+# 2.5 %       97.5 %
+#   (Intercept)   938.08957 1024.3210114
+# cap1$june_day  -6.37186   -0.8736247
+
+
+fun_summary <- function(x){
+  m <- mean(x)
+  se <- sd(x)/sqrt(length(x))
+  e <- qnorm(0.975)*se
+  return(c(m,m-e,m+e,m-se,m+se))
+}
+
+
+# GPS+TDR
+# GPS first
+gps.1.gps <- fun_summary(deployments$mass_change_last_day[deployments$group == "+G1" &
+                                        deployments$Capture == 2])
+# -10.933333 -15.552840  -6.313827 -13.290268  -8.576399
+gps.1.gps.points <- deployments$mass_change_last_day[deployments$group == "+G1" &
+                                                       deployments$Capture == 2]
+
+# TDR first
+gps.2.gps <- fun_summary(deployments$mass_change_last_day[deployments$group == "+G2" &
+                                             deployments$Capture == 3])
+# -9.250000 -13.374859  -5.125141 -11.354559  -7.145441
+gps.2.gps.points <- deployments$mass_change_last_day[deployments$group == "+G2" &
+                                                       deployments$Capture == 3]
+
+# TDR only
+# GPS first
+gps.1.tdr <- fun_summary(deployments$mass_change_last_day[deployments$group == "+G1" &
+                                             deployments$Capture == 3])
+# 0.9166667 -3.5640652  5.3973985 -1.3694630  3.2027963
+gps.1.tdr.points <- deployments$mass_change_last_day[deployments$group == "+G1" &
+                                                       deployments$Capture == 3]
+
+# TDR first
+gps.2.tdr <- fun_summary(deployments$mass_change_last_day[deployments$group == "+G2" &
+                                             deployments$Capture == 2])
+# -6.2222222 -17.7395523   5.2951079 -12.0985190  -0.3459254
+gps.2.tdr.points <- deployments$mass_change_last_day[deployments$group == "+G2" &
+                                                      deployments$Capture == 2]
+  
+# Controls
+contols <- fun_summary(deployments$mass_change_last_day[deployments$group == "C" &
+                                                          deployments$Capture == 2])
+# -1.666667 -7.459203  4.125870 -4.622097  1.288764
+controls.points <- deployments$mass_change_last_day[deployments$group == "C" &
+                                                      deployments$Capture == 2]
+
+
+# range(deployments$mass_change_last_day, na.rm = TRUE)
+
+
+par(ps = 14, cex = 1.5, cex.lab = 2)
+svg("mass_change_coef.svg",
+    width = 6, height = 4, family = "serif")
+# ?cairo_ps
+# Plot base map
+par(mfrow = c(1,1))
+par(mar=c(4, 6, 1, 1) + 0.1)   
+# ?par
+plot(c(0,8)~c(-22,17),
+     type = "n",
+     xlab = expression("Change in mass ("~g.day^-1~")"),
+     ylab = "",
+     las = 1,
+     cex.lab = 1.3,
+     yaxt = "n"
+)
+# ?grid
+# Add zero line
+abline(v = 0, col = "grey70")
+
+
+
+# Add colony level trend line
+rect(-6.37186, -10, -0.8736247, 20,
+     col = "light grey", border = NULL,
+     lty = 1, lwd = NA
+     )
+abline(v=-3.623,
+       lwd = 5,
+       col = "dark grey",
+       lty = 1)
+abline(v=c(-6.37186, -0.8736247),
+       lwd = 2,
+       col = "dark grey",
+       lty = 3)
+
+
+# Add grid lines (vertical only)
+abline(v = seq(-20,15,5), lty = 5, col = "grey")
+
+#redraw box
+box()
+
+# m,-95,+95,m-se,m+se
+
+# Add GPS
+# GPS1 group
+segments(gps.1.gps[2],7,gps.1.gps[3],7,
+         lwd = 3, col = add.alpha("black", 0.3))
+segments(gps.1.gps[4],7,gps.1.gps[5],7,
+         lwd = 6, col = add.alpha("black", 0.3))
+points(gps.1.gps[1],7,
+       pch = 18,
+       col = add.alpha("black", 0.5),
+       cex = 2)
+points(gps.1.gps.points,rep(7,length(gps.1.gps.points)),
+       pch = 18,
+       col = add.alpha("black", 0.5))
+
+# GPS2 group
+segments(gps.2.gps[2],6,gps.2.gps[3],6,
+         lwd = 3, col = add.alpha("black", 0.3))
+segments(gps.2.gps[4],6,gps.2.gps[5],6,
+         lwd = 6, col = add.alpha("black", 0.3))
+points(gps.2.gps[1],6,
+       pch = 15,
+       col = add.alpha("black", 0.5),
+       cex = 2)
+points(gps.2.gps.points,rep(6,length(gps.2.gps.points)),
+       pch = 15,
+       col = add.alpha("black", 0.5))
+
+
+# Add TDR
+# GPS1 group
+segments(gps.1.tdr[2],4,gps.1.tdr[3],4,
+         lwd = 3, col = add.alpha("black", 0.3))
+segments(gps.1.tdr[4],4,gps.1.tdr[5],4,
+         lwd = 6, col = add.alpha("black", 0.3))
+points(gps.1.tdr[1],4,
+       pch = 18,
+       col = add.alpha("black", 0.5),
+       cex = 2)
+points(gps.1.tdr.points,rep(4,length(gps.1.tdr.points)),
+       pch = 18,
+       col = add.alpha("black", 0.5))
+
+# GPS2 group
+segments(gps.2.tdr[2],3,gps.2.tdr[3],3,
+         lwd = 3, col = add.alpha("black", 0.3))
+segments(gps.2.tdr[4],3,gps.2.tdr[5],3,
+         lwd = 6, col = add.alpha("black", 0.3))
+points(gps.2.tdr[1],3,
+       pch = 15,
+       col = add.alpha("black", 0.5),
+       cex = 2)
+points(gps.2.tdr.points,rep(3,length(gps.2.tdr.points)),
+       pch = 15,
+       col = add.alpha("black", 0.5))
+
+
+
+# Control group
+segments(contols[2],1,contols[3],1,
+         lwd = 3, col = add.alpha("dark grey", 0.8))
+segments(contols[4],1,contols[5],1,
+         lwd = 6, col = add.alpha("dark grey", 0.8))
+points(contols[1],1,
+       pch = 21,
+       col = add.alpha("black", 0.5),
+       bg =  add.alpha("dark grey", 0.5),
+       cex = 2)
+points(controls.points,rep(1,length(controls.points)),
+       pch = 21,
+       col = add.alpha("black", 0.5),
+       bg =  add.alpha("dark grey", 0.5))
+
+
+
+
+
+# Adding key
+legend(x = 4, y = 8,
+       legend = c(
+         "Exp (GPS+TDR -> TDR)",
+         "Exp (TDR -> GPS+TDR)",
+         "Control"),
+       col = c("black", "black", "black"),
+       pt.bg = c(NA, NA, "dark grey"),
+       # lty = c(NA, 1, 2, 2, 3),
+       # lwd = c(2, 2, 2, 2, 5),
+       # pt.lwd = c(1,1,1,1,1),
+       # bg = c("black", "grey"),
+       pch = c(18, 15, 21),
+       y.intersp = 0.9,
+       seg.len = 2,
+       cex = 0.7
+)
+
+
+
+mtext("GPS + TDR", side = 2,
+      las = 1, at = 6.5, line = 5, adj = 0.2,
+      cex = 1.3)
+mtext("TDR", side = 2,
+      las = 1, at = 3.5, line = 5, adj = 0.2,
+      cex = 1.3)
+mtext("Control", side = 2,
+      las = 1, at = 1, line = 5, adj = 0.2,
+      cex = 1.3)
+
+dev.off()
