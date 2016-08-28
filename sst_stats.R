@@ -200,6 +200,8 @@ KRSumFun <- function(object, objectDrop, ...) {
 # Only keep vallid sst
 bouts_df_x <- bouts_df_s[bouts_df_s$sst_vallid,]
 # sst_median
+# bouts_df_x <- bouts_df_s[bouts_df_s$sst_vallid &
+#                            !(bouts_df_s$june_day %in% c(20:22)),]
 
 
 models <- list()
@@ -355,6 +357,14 @@ summary(models[[1]])
 # Check model behaviour
 plot(models[[1]])
 qqmath(models[[1]])
+
+
+
+library(influence.ME)
+infl <- influence(models[[1]], obs = TRUE)
+summary((cooks.distance(infl))> (4/1150))
+bouts_df_x <- bouts_df_x[(cooks.distance(infl))< (4/1150),]
+plot(infl, which = "cook")
 
 
 # bout sst vs. daily satellite SST -----
