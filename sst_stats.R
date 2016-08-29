@@ -152,12 +152,36 @@ ssts <- extractOISSTdaily("D:/Dropbox/Guillemots/2015/sst_data/sst.day.mean.2015
                           date2 = '2015-06-25')
 str(ssts)
 sst_mean <- NA
-sst_date <- NA
+sst_date <- sst_sd <- sst_n <- sst_range <- NA
 for(i in 1:17){
   sst_mean[i] <- mean(ssts[,,i])
+  sst_sd[i] <- sd(ssts[,,i])
+  sst_range[i] <- max(ssts[,,i]) - min(ssts[,,i])
+  sst_n[i] <- length(ssts[,,i])
   sst_date[i] <- 8 + i
 }
+sst_n
+
+# Daily range
+mean(sst_range)
+sd(sst_range)
+
+# Period range
+mean(sst_mean)
+sd(sst_mean)
+
 plot(sst_mean~sst_date)
+
+# 
+# > sd(sst_range)
+# [1] 0.1609325
+# > mean(sst_range)
+# [1] 0.3264706
+# > mean(sst_mean)
+# [1] 12.54331
+# > sd(sst_mean)
+# [1] 0.8561907
+
 
 sst_noaa <- cbind.data.frame(sst_date, sst_mean)
 names(sst_noaa) <- c("june_day","sst_noaa_day_mean")
