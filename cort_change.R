@@ -16,12 +16,30 @@ deployments$june_day <- as.numeric(format(deployments$Date, "%d"))
 # deployments$Mass_resid <- deployments$Mass-973.8 + 3.8*deployments$june_day
 # hist(deployments$Mass_resid)
 
+deployments$CORT_log <- log10(deployments$CORT)
+
+
+# 1st caps only
+dep.1 <- deployments[deployments$Capture == 1,]
+# Summary stats for CORT
+summary(dep.1$CORT)
+sd(dep.1$CORT)
+
+
+# Change in CORT accros chick-rearing -----
+mod.cort <- lm(dep.1$CORT_log~dep.1$june_day)
+plot(mod.cort)
+summary(mod.cort)
+
+plot(dep.1$CORT~dep.1$june_day, log = "y")
+abline(mod.cort, lty = 2)
+
+
 # Change in mass/ Cort
 # From last event
 dep.ord <- order(deployments$Metal, deployments$Capture)
 deployments <- deployments[dep.ord,]
 
-deployments$CORT_log <- log10(deployments$CORT)
 
 
 # From last
@@ -179,31 +197,115 @@ KRSumFun <- function(object, objectDrop, ...) {
 }
 
 
+
+
+
+# Actual CORT levels -----
+mods <- list()
+mods[1] <- lmer( CORT_log ~
+                   device.status*group +june_day +
+                   (1|Metal),
+                 data = deployments[deployments$TYPE == "device" & deployments$Capture != 1,])
+
+mods[2] <- lmer( CORT_log ~
+                   device.status+group + june_day +
+                   (1|Metal),
+                 data = deployments[deployments$TYPE == "device" & deployments$Capture != 1,])
+
+mods[3] <- lmer( CORT_log ~
+                   device.status + june_day + 
+                   (1|Metal),
+                 data = deployments[deployments$TYPE == "device" & deployments$Capture != 1,])
+
+mods[4] <- lmer( CORT_log ~
+                   group + june_day +
+                   1 +
+                   (1|Metal),
+                 data = deployments[deployments$TYPE == "device" & deployments$Capture != 1,])
+
+mods[5] <- lmer( CORT_log ~
+                   june_day +
+                   (1|Metal),
+                 data = deployments[deployments$TYPE == "device" & deployments$Capture != 1,])
+
+# deployments$june_day
+mods[6] <- lmer( CORT_log ~
+                   1 +
+                   (1|Metal),
+                 data = deployments[deployments$TYPE == "device" & deployments$Capture != 1,])
+# 
+# mods[7] <- lmer( CORT_log ~
+#                    device.status*group+ june_day +
+#                    (1|Metal),
+#                  data = deployments[deployments$TYPE == "device" & deployments$Capture != 1,])
+
+# Summarise information from the models
+mods.aicc <- sapply(mods, AICc)
+mods.aicc.dif <- mods.aicc-min(mods.aicc)
+mods.r2m <- sapply(mods, r.squaredGLMM)
+t(mods.r2m)
+# MuMIn::r.squaredGLMM
+mods.fit.df <- cbind.data.frame(c(1:length(mods)),mods.aicc,
+                                mods.aicc.dif,
+                                t(mods.r2m))
+names(mods.fit.df) <- c("mod", "AICc", "dAICc", "R2m", "R2c")
+
+mods.fit.df
+summary(mods[[1]])
+plot(mods[[4]])
+qqmath(mods[[4]])
+
+
 # Device deployments only ----
-mod.devices <- lmer( CORT_log_change_last_day ~
+mods <- list()
+mods[1] <- lmer( CORT_log_change_last_day ~
                        device.status*group +
                        (1|Metal),
                      data = deployments[deployments$TYPE == "device" & deployments$Capture != 1,])
 
-mod.devices2 <- lmer( CORT_log_change_last_day ~
+mods[2] <- lmer( CORT_log_change_last_day ~
                         device.status+group +
                         (1|Metal),
                       data = deployments[deployments$TYPE == "device" & deployments$Capture != 1,])
 
-mod.devices3 <- lmer( CORT_log_change_last_day ~
+mods[3] <- lmer( CORT_log_change_last_day ~
                         device.status +
                         (1|Metal),
                       data = deployments[deployments$TYPE == "device" & deployments$Capture != 1,])
 
-mod.devices4 <- lmer( CORT_log_change_last_day ~
+mods[4] <- lmer( CORT_log_change_last_day ~
                         1 +
                         (1|Metal),
                       data = deployments[deployments$TYPE == "device" & deployments$Capture != 1,])
 
-mod.devices5 <- lmer( CORT_log_change_last_day ~
+mods[5] <- lmer( CORT_log_change_last_day ~
                         group +
                         (1|Metal),
                       data = deployments[deployments$TYPE == "device" & deployments$Capture != 1,])
+
+# deployments$june_day
+mods[6] <- lmer( CORT_log_change_last_day ~
+                    june_day +
+                   (1|Metal),
+                 data = deployments[deployments$TYPE == "device" & deployments$Capture != 1,])
+
+mods[7] <- lmer( CORT_log_change_last_day ~
+                   device.status*group+ june_day +
+                   (1|Metal),
+                 data = deployments[deployments$TYPE == "device" & deployments$Capture != 1,])
+
+# Summarise information from the models
+mods.aicc <- sapply(mods, AICc)
+mods.aicc.dif <- mods.aicc-min(mods.aicc)
+mods.r2m <- sapply(mods, r.squaredGLMM)
+t(mods.r2m)
+# MuMIn::r.squaredGLMM
+mods.fit.df <- cbind.data.frame(c(1:length(mods)),mods.aicc,
+                                  mods.aicc.dif,
+                                  t(mods.r2m))
+names(mods.fit.df) <- c("mod", "AICc", "dAICc", "R2m", "R2c")
+
+
 
 summary(mod.devices)
 
@@ -264,7 +366,7 @@ mod.devices_par_df <- cbind.data.frame(mod.devices_coef,mod.devices_ci[-c(1:2),]
 
 
 # deployments$device.status
-
+deployments$CORT_log_change_last
 
 # All 1st deployment only ----
 mod.devices <- lm( CORT_log_change_last_day ~
@@ -272,6 +374,12 @@ mod.devices <- lm( CORT_log_change_last_day ~
                    data = deployments[deployments$TYPE != "background" & deployments$Capture == 2,])
 summary(mod.devices)
 anova(mod.devices)
+
+
+mod.devices <- lm( CORT_log_change_last ~
+                     group,
+                   data = deployments[deployments$TYPE != "background" & deployments$Capture == 2,])
+summary(mod.devices)
 
 # ggplot(deployments[deployments$TYPE != "background" & deployments$Capture == 2,],
 #        aes(x = group, y = mass_resid_change_last_day)) +
