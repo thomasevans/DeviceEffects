@@ -3,9 +3,27 @@
 # Read in raw data ----
 deployments <- read.csv("all_caps_weight_cort.csv", header = TRUE)
 
+deployments$Date <- as.Date(deployments$Date, tz = "UTC")
+
+unique_dep <- deployments[deployments$Capture ==1,]
+summary(unique_dep$TYPE)
+length(unique_dep$TYPE)
+
 str(deployments)
 
-deployments$Date <- as.Date(deployments$Date, tz = "UTC")
+# Background mass change ----
+
+unique_dep$june_day <- as.numeric(format(unique_dep$Date, "%d"))
+
+mod.mass <- lm(unique_dep$Mass~unique_dep$june_day)
+summary(mod.mass)
+
+confint(mod.mass)
+
+plot(mod.mass)
+
+mean(unique_dep$Mass)
+sd(unique_dep$Mass)
 
 # Make calculations ----
 
