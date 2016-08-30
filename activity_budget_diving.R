@@ -425,6 +425,25 @@ ggsave(filename = "activty_dive_date.png", width = 6, height = 4,
 ggsave(filename = "activty_dive_date.pdf", width = 6, height = 4,
        units = "in")
 
+# Summary stats -----
+summary(day.df.comb$dive_pdi_p)
+sd(day.df.comb$dive_pdi_p)
+
+summary(day.df.comb$dive_pdi_p~day.df.comb$ring_number)
+
+bird.means <- ddply(day.df.comb, .(ring_number),
+      summarise,
+      mean_prop_day = mean(dive_pdi_p, na.rm = TRUE),
+      sd_prop_day = sd(dive_pdi_p, na.rm = TRUE),
+      mean_p_daytime = mean(dive_pdi_p_day, na.rm = TRUE),
+      sd_p_daytime =  sd(dive_pdi_p_day, na.rm = TRUE)
+)
+
+mean(bird.means$mean_prop_day)
+sd(bird.means$mean_prop_day)
+
+mean(bird.means$mean_p_daytime)
+sd(bird.means$mean_p_daytime)
 
 
 # Statistical analysis of PDI time -----
