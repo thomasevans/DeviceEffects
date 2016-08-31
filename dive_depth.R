@@ -53,6 +53,7 @@ dives_df <- dives_df[dives_df$TDR_deployment_id != 1,]
 names(dives_df)[names(dives_df)=="ring_number.x"] <- "ring_number"
 
 
+
 # Get breeding data ----
 chick.dates <- sqlQuery(gps.db,
                             query = "SELECT guillemots_GPS_TDR_breeding.ring_number, guillemots_GPS_TDR_breeding.hatch, guillemots_GPS_TDR_breeding.hatch_unc, guillemots_GPS_TDR_breeding.hatch_june_day, guillemots_GPS_TDR_breeding.chick_age_day_june_conv, guillemots_GPS_TDR_breeding.notes
@@ -246,6 +247,8 @@ type.means.ind <- ddply(dives_df, .(GPS_TDR_order, type, ring_number),
 )
 type.means.ind
 
+mean(type.means.ind$depth_mean)
+sd(type.means.ind$depth_mean)
 
 # Plot above ------
 
@@ -332,8 +335,9 @@ ggsave(filename = "change_depth_mean_se.pdf", width = 4, height = 4,
 
 
 hist(dives_df$depth_max_m, breaks = 100)
-hist(log10(dives_df$depth_max_m), breaks = 100)
 abline(v=c(13,50), col = "red")
+
+hist(log10(dives_df$depth_max_m), breaks = 100)
 
 # 3-types of dive plot -----
 dive_type_fun <- function(x){
@@ -356,10 +360,24 @@ ggsave(filename = "p_types_of_dive.png", width = 8, height = 5,
 ggsave(filename = "p_types_of_dive.pdf", width = 8, height = 5,
        units = "in")
 
+levels(as.factor(dives_df$type))
+
+library(plyr)
+library(cowplot)
+dives_df$type <- as.factor(dives_df$type)
+levels((dives_df$type))
+dives_df$type <- revalue(dives_df$type, c("GPS"="GPS+TDR", "TDR"="TDR"))
+
+dives_df$GPS_TDR_order <- as.factor(dives_df$GPS_TDR_order)
+levels((dives_df$GPS_TDR_order))
+dives_df$GPS_TDR_order <- revalue(dives_df$GPS_TDR_order,
+                                  c("GPS_first"="GPS+TDR 1st", "TDR_first"="GPS+TDR 2nd"))
 
 m <- ggplot(dives_df, aes(x = depth_max_m, ..density..))
 m <- m + geom_histogram(colour = "dark grey",
-                        fill = "grey", binwidth = 2,)
+                        fill = "grey", binwidth = 2.5,
+                        center = 6.25)
+# ?geom_histogram
 m <- m + facet_grid(type ~ GPS_TDR_order)
 m <- m + geom_vline(xintercept = c(13, 50),
                     lty = 2, lwd = 1.5, alpha = 0.6, col = "red")
@@ -373,6 +391,32 @@ ggsave(filename = "dive_depth_hist_density.pdf", width = 6, height = 5,
 
 # ??geom_histogram
 
+levels(as.factor(dives_df$dive_type))
+# Summary stats for dive types -------
+bird.means <- ddply(dives_df, .(ring_number),
+                    summarise,
+                    deep_n = sum(dive_type == "d"),
+                    med_n = sum(dive_type == "m"),
+                    shallow_n = sum(dive_type == "s"),
+                    total_n =  deep_n+ med_n+ shallow_n,
+                    p_shallow = shallow_n/ total_n,
+                    p_deep = deep_n/ total_n,
+                    p_medium = med_n/ total_n
+)
+
+summary(bird.means)
+
+mean(bird.means$p_medium)
+sd(bird.means$p_medium)
+
+mean(bird.means$p_deep)
+sd(bird.means$p_deep)
+
+mean(bird.means$p_shallow)
+sd(bird.means$p_shallow)
+
+shallow_n_prop <- bird.means$shallow_n/sum(bird.means$shallow_n)
+sum(shallow_n_prop[c(4,7)])
 
 # Logistic models for dives type -------
 dives_df$dive_type_bool <- dives_df$dive_type
@@ -393,139 +437,152 @@ models_logist <- list()
 
 dives_df_NAN <- dives_df[!is.na(dives_df$dive_type_bool),]
 dives_df_NAN$idx <- 1:nrow(dives_df_NAN)
+dives_df_NAN <- dives_df_NAN[dives_df_NAN$day_period == "DAY",]
+# numcols <- grep("^c\\.",names(dives_df_NAN))
+# dfs <- dives_df_NAN
+# dfs[,numcols] <- scale(dfs[,numcols])
+
+# ftable(xtabs(cbind(dive_type_bool, day_period) ~ ., data = dives_df_NAN))
+# (dives_df_NAN$dive_type_bool~as.factor(dives_df_NAN$day_period))
+# ?table
+# levels(as.factor(dives_df_NAN$day_period))
+
+mytable <- xtabs(~dive_type_bool+day_period, data=dives_df_NAN)
+ftable(mytable) # print table 
+1547/(1547+4407)
 
 models_logist[[1]] <- glmer(dive_type_bool ~
                        GPS_TDR_order*type +
                        june_day +
-                       day_period +
+                       # day_period +
                          chick_age*type +
-                         (1|idx)+
+                         # (1|idx)+
                        (1|ring_number/june_day/dive_bout_id),
-                     data = dives_df_NAN, family=binomial(link='logit'))
+                     data = dives_df_NAN, family=binomial(link='logit'), control=glmerControl(optimizer="bobyqa"))
+# 
+# models_logistx <- glmer(dive_type_bool ~
+#                               GPS_TDR_order*type +
+#                               june_day +
+#                               # day_period +
+#                               chick_age*type +
+#                               # (1|idx)+
+#                               (1|ring_number/june_day/dive_bout_id),
+#                             data = dives_df_NAN, family=binomial(link='logit'), control=glmerControl(optimizer="bobyqa"),
+#                         control=glmerControl(optimizer="bobyqa"))
+
+# m1_sc <- update(models_logist[[1]],data=dfs)
+# r2fun(m1_sc)
+
+# tt <- getME(m1_sc,"theta")
+# ll <- getME(m1_sc,"lower")
+# min(tt[ll==0])
+
+# ss <- getME(m1_sc,c("theta","fixef"))
+# m2 <- update(m1_sc,start=ss,control=glmerControl(optCtrl=list(maxfun=2e4)))
+# m3 <- update(m1_sc,start=ss,control=glmerControl(optimizer="bobyqa",
+#                                                  optCtrl=list(maxfun=2e5)))
+# r2fun(m3)
+# 
+# summary(models_logist[[1]])
 
 models_logist[[2]] <- glmer(dive_type_bool ~
                               GPS_TDR_order+type +
                               june_day +
-                              day_period +
+                              # day_period +
                               chick_age*type +
-                              (1|idx)+
+                              # (1|idx)+
                               (1|ring_number/june_day/dive_bout_id),
-                            data = dives_df_NAN, family=binomial(link='logit'))
+                            data = dives_df_NAN, family=binomial(link='logit'), control=glmerControl(optimizer="bobyqa"))
 
 models_logist[[3]] <- glmer(dive_type_bool ~
                               GPS_TDR_order*type +
                               june_day +
-                              day_period +
+                              # day_period +
                               chick_age +
-                              (1|idx)+
+                              # (1|idx)+
                               (1|ring_number/june_day/dive_bout_id),
-                            data = dives_df_NAN, family=binomial(link='logit'))
+                            data = dives_df_NAN, family=binomial(link='logit'), control=glmerControl(optimizer="bobyqa"))
 
 
 models_logist[[4]] <- glmer(dive_type_bool ~
                               june_day +
-                              day_period +
+                              # day_period +
                               chick_age*type +
-                              (1|idx)+
+                              # (1|idx)+
                               (1|ring_number/june_day/dive_bout_id),
-                            data = dives_df_NAN, family=binomial(link='logit'))
+                            data = dives_df_NAN, family=binomial(link='logit'), control=glmerControl(optimizer="bobyqa"))
 
 models_logist[[5]] <- glmer(dive_type_bool ~
                               GPS_TDR_order+type +
                               june_day +
-                              day_period +
+                              # day_period +
                               chick_age +
-                              (1|idx)+
+                              # (1|idx)+
                               (1|ring_number/june_day/dive_bout_id),
-                            data = dives_df_NAN, family=binomial(link='logit'))
+                            data = dives_df_NAN, family=binomial(link='logit'), control=glmerControl(optimizer="bobyqa"))
 
 models_logist[[6]] <- glmer(dive_type_bool ~
                               GPS_TDR_order +
                               june_day +
-                              day_period +
+                              # day_period +
                               chick_age +
-                              (1|idx)+
+                              # (1|idx)+
                               (1|ring_number/june_day/dive_bout_id),
-                            data = dives_df_NAN, family=binomial(link='logit'))
+                            data = dives_df_NAN, family=binomial(link='logit'), control=glmerControl(optimizer="bobyqa"))
 
 models_logist[[7]] <- glmer(dive_type_bool ~
                               type +
                               june_day +
-                              day_period +
+                              # day_period +
                               chick_age +
-                              (1|idx)+
+                              # (1|idx)+
                               (1|ring_number/june_day/dive_bout_id),
-                            data = dives_df_NAN, family=binomial(link='logit'))
+                            data = dives_df_NAN, family=binomial(link='logit'), control=glmerControl(optimizer="bobyqa"))
 
 models_logist[[8]] <- glmer(dive_type_bool ~
                               june_day +
-                              day_period +
+                              # day_period +
                               chick_age +
-                              (1|idx)+
+                              # (1|idx)+
                               (1|ring_number/june_day/dive_bout_id),
-                            data = dives_df_NAN, family=binomial(link='logit'))
+                            data = dives_df_NAN, family=binomial(link='logit'), control=glmerControl(optimizer="bobyqa"))
 
 models_logist[[9]] <- glmer(dive_type_bool ~
-                              1 + (1|idx)+
+                              1 + # (1|idx)+
                               (1|ring_number/june_day/dive_bout_id),
-                            data = dives_df_NAN, family=binomial(link='logit'))
+                            data = dives_df_NAN, family=binomial(link='logit'), control=glmerControl(optimizer="bobyqa"))
 
-# 
-# models_logist[[2]] <- glmer(dive_type_bool ~
-#                        GPS_TDR_order+type +
-#                        june_day +
-#                        day_period + (1|idx) +
-#                        (1|ring_number/june_day/dive_bout_id),
-#                      data = dives_df_NAN, family=binomial(link='logit'))
-# 
-# models_logist[[3]] <- glmer(dive_type_bool ~
-#                        GPS_TDR_order +
-#                        june_day +
-#                        day_period +(1|idx) +
-#                        (1|ring_number/june_day/dive_bout_id),
-#                      data = dives_df_NAN, family=binomial(link='logit'))
-# 
-# models_logist[[4]] <- glmer(dive_type_bool ~
-#                        type +
-#                        june_day +
-#                        day_period +(1|idx) +
-#                        (1|ring_number/june_day/dive_bout_id),
-#                      data = dives_df_NAN, family=binomial(link='logit'))
-# 
-# models_logist[[5]] <- glmer(dive_type_bool ~
-#                        june_day +
-#                        day_period +(1|idx) +
-#                        (1|ring_number/june_day/dive_bout_id),
-#                      data = dives_df_NAN, family=binomial(link='logit'))
-# 
-# models_logist[[6]] <- glmer(dive_type_bool ~
-#                        1 +(1|idx) +
-#                        (1|ring_number/june_day/dive_bout_id),
-#                      data = dives_df_NAN, family=binomial(link='logit'))
 
 # # Based on this: https://ecologyforacrowdedplanet.wordpress.com/2013/08/27/r-squared-in-mixed-models-the-easy-way/
-# r2fun <- function(x){
-#   Vf <- var(model.matrix(x) %*% fixef(x))
-#   Vr <- sum(unlist(print(VarCorr(x),comp="Variance")))
-#   vresid <- var(resid(x))
-#   # Vdist <- pi^2 / 3
-#   Vtotal <- Vf + Vr + vresid
-#   R2m <- Vf / (Vtotal)
-#   R2c <- (Vf + Vr) / (Vtotal)
-#   return(c(R2m,R2c))
-# }
+r2fun <- function(x){
+  Vf <- var(model.matrix(x) %*% fixef(x))
+  Vr <- sum(unlist(print(VarCorr(x),comp="Variance")))
+  vresid <- var(resid(x))
+  # Vdist <- pi^2 / 3
+  Vtotal <- Vf + Vr + vresid
+  R2m <- Vf / (Vtotal)
+  R2c <- (Vf + Vr) / (Vtotal)
+  return(c(R2m,R2c))
+}
+
+models_logist.r2m <- sapply(models_logist, r2fun)
+# r2fun(models_logist[[3]])
 
 # Summarise information from the models_logist
 models_logist.aicc <- sapply(models_logist, AICc)
 models_logist.aicc.dif <- models_logist.aicc-min(models_logist.aicc)
-models_logist.r2m <- sapply(models_logist, r.squaredGLMM)
+# models_logist.r2m <- sapply(models_logist, r.squaredGLMM)
 # t(models_logist.r2m)
 models_logist.fit.df <- cbind.data.frame(c(1:length(models_logist)),models_logist.aicc,
                                   models_logist.aicc.dif,
                                   t(models_logist.r2m))
 names(models_logist.fit.df) <- c("mod", "AICc", "dAICc", "R2m", "R2c")
 
-summary(models_logist[[1]])
+models_logist.fit.df
+
+# cbind(models_logist.fit.df, t(models_logist.r2mx))
+
+summary(models_logist[[3]])
 # r.squaredGLMM(models_logist[[1]])
 
 anova(models_logist[[1]],
@@ -544,7 +601,7 @@ drop1(models_logist[[3]], test = "user", sumFun = KRSumFun)
 # Confidence intervals + coeficients
 model_va_coef <- summary(models_logist[[3]])$coef[, 1]
 model_va_ci <- confint(models_logist[[3]], method="Wald")
-model_va_par_df <- cbind.data.frame(model_va_coef,model_va_ci[-c(1:4),])
+model_va_par_df <- cbind.data.frame(model_va_coef,model_va_ci[-c(1:3),])
 
 summary(models_logist[[3]])
 # Check model behaviour
