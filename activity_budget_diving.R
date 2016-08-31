@@ -40,6 +40,13 @@ deployments$date_time_ON <- as.POSIXct(deployments$date_time_ON,
 
 t.dur <- deployments$date_time_OFF - deployments$date_time_ON
 
+# Sample size...
+deployments.main <- deployments[-1,]
+sum(t.dur[-1][deployments.main$GPS_TDR_event == 1 &
+                deployments.main$GPS_TDR_order== "GPS_first"]) +
+sum(t.dur[-1][deployments.main$GPS_TDR_event == 2 &
+                deployments.main$GPS_TDR_order== "TDR_first"])
+45.9/85.40
 
 # Load in dive data
 dives <- sqlQuery(gps.db,
