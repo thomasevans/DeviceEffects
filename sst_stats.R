@@ -235,15 +235,30 @@ models[[1]] <- glmer(sst_median_dev ~
                        chick_age*type +
                        june_day +
                        day_period +
-                       sst_day_cycle + (1|ring_number/june_day),
+                       sst_day_cycle +(1|as.factor(june_day)) +                        (1|ring_number/june_day),
                      data = bouts_df_x)
+
+# models[[2]] <- glmer(sst_median_dev ~
+#                        GPS_TDR_order*type +
+#                        chick_age*type +
+#                        june_day +
+#                        day_period +
+#                        sst_day_cycle + (1|as.factor(june_day)) +
+#                       (1|as.factor(june_day)) +                        (1|ring_number/june_day),
+#                      data = bouts_df_x)
+
+# anova(models[[1]], models[[2]])
+
+# qqmath(models[[1]])
+# qqmath(models[[2]])
+# plot(models[[1]])
 
 models[[2]] <- glmer(sst_median_dev ~
                        GPS_TDR_order + type +
                        chick_age*type +
                        june_day +
                        day_period +
-                       sst_day_cycle + (1|ring_number/june_day),
+                       sst_day_cycle +(1|as.factor(june_day)) +                        (1|ring_number/june_day),
                      data = bouts_df_x)
 
 models[[3]] <- glmer(sst_median_dev ~
@@ -251,7 +266,7 @@ models[[3]] <- glmer(sst_median_dev ~
                        chick_age + type +
                        june_day +
                        day_period +
-                       sst_day_cycle + (1|ring_number/june_day),
+                       sst_day_cycle +(1|as.factor(june_day)) +                        (1|ring_number/june_day),
                      data = bouts_df_x)
 
 models[[4]] <- glmer(sst_median_dev ~
@@ -259,7 +274,7 @@ models[[4]] <- glmer(sst_median_dev ~
                        chick_age*type +
                        june_day +
                        day_period +
-                       sst_day_cycle + (1|ring_number/june_day),
+                       sst_day_cycle +(1|as.factor(june_day)) +                        (1|ring_number/june_day),
                      data = bouts_df_x)
 
 models[[5]] <- glmer(sst_median_dev ~
@@ -267,7 +282,7 @@ models[[5]] <- glmer(sst_median_dev ~
                        chick_age +
                        june_day +
                        day_period +
-                       sst_day_cycle + (1|ring_number/june_day),
+                       sst_day_cycle +(1|as.factor(june_day)) +                        (1|ring_number/june_day),
                      data = bouts_df_x)
 
 models[[6]] <- glmer(sst_median_dev ~
@@ -275,7 +290,7 @@ models[[6]] <- glmer(sst_median_dev ~
                        chick_age +
                        june_day +
                        day_period +
-                       sst_day_cycle + (1|ring_number/june_day),
+                       sst_day_cycle +(1|as.factor(june_day)) +                        (1|ring_number/june_day),
                      data = bouts_df_x)
 
 models[[7]] <- glmer(sst_median_dev ~
@@ -283,7 +298,7 @@ models[[7]] <- glmer(sst_median_dev ~
                        chick_age +
                        june_day +
                        day_period +
-                       sst_day_cycle + (1|ring_number/june_day),
+                       sst_day_cycle +(1|as.factor(june_day)) +                        (1|ring_number/june_day),
                      data = bouts_df_x)
 
 models[[8]] <- glmer(sst_median_dev ~
@@ -291,11 +306,11 @@ models[[8]] <- glmer(sst_median_dev ~
                        chick_age +
                        june_day +
                        day_period +
-                       sst_day_cycle + (1|ring_number/june_day),
+                       sst_day_cycle +(1|as.factor(june_day)) +                        (1|ring_number/june_day),
                      data = bouts_df_x)
 
 models[[9]] <- glmer(sst_median_dev ~
-                       1 + (1|ring_number/june_day),
+                       1 +(1|as.factor(june_day)) +                        (1|ring_number/june_day),
                      data = bouts_df_x)
 
 
@@ -362,9 +377,9 @@ names(models.fit.df) <- c("mod", "AICc", "dAICc", "R2m", "R2c")
 
 
 # Significance for dropped terms
-drop1(models[[1]], test = "user", sumFun = KRSumFun)
+drop1(models[[8]], test = "user", sumFun = KRSumFun)
 
-summary(models[[1]])
+summary(models[[8]])
 
 # Cite: Halekoh, U., and Højsgaard, S. (2014). A kenward-roger approximation and parametric bootstrap methods for tests in linear mixed models–the R package pbkrtest. Journal of Statistical Software 59, 1–30.
 
@@ -373,23 +388,23 @@ summary(models[[1]])
 
 
 # Confidence intervals + coeficients
-model_va_coef <- summary(models[[1]])$coef[, 1]
-model_va_ci <- confint(models[[1]], method="Wald")
-model_va_par_df <- cbind.data.frame(model_va_coef,model_va_ci[-c(1:3),])
+model_va_coef <- summary(models[[8]])$coef[, 1]
+model_va_ci <- confint(models[[8]], method="Wald")
+model_va_par_df <- cbind.data.frame(model_va_coef,model_va_ci[-c(1:4),])
 
-summary(models[[1]])
+summary(models[[8]])
 # Check model behaviour
-plot(models[[1]])
-qqmath(models[[1]])
+plot(models[[8]])
+qqmath(models[[8]])
 
 
 
 library(influence.ME)
-infl <- influence(models[[1]], obs = TRUE)
-summary((cooks.distance(infl))> (4/1150))
-bouts_df_x <- bouts_df_x[(cooks.distance(infl))< (4/1150),]
+infl <- influence(models[[8]], obs = TRUE)
+# summary((cooks.distance(infl))> (4/1150))
+# bouts_df_x <- bouts_df_x[(cooks.distance(infl))< (4/1150),]
 plot(infl, which = "cook")
-
+abline(v = (4/1150))
 
 # bout sst vs. daily satellite SST -----
 mod1 <- lm(bouts_df_x$sst_median~bouts_df_x$sst_noaa_day_mean)
