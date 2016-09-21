@@ -467,6 +467,11 @@ add.alpha <- function(col, alpha=1){
 summary(bouts_df$sst_vallid)
 
 
+par(ps = 14, cex = 1.5, cex.lab = 2)
+png("bout_sst_poster.png",
+    width = 6, height = 3.8, res = 300,
+    units = "in", family = "serif")
+
 png("bout_sst.png", width = 6, height = 4, res = 300,
     units = "in")
 pdf("bout_sst.pdf", width = 6, height = 4)
@@ -497,7 +502,7 @@ for(i in 1:24){
 } 
 day.cy$h <- h
 day.cy$times <- (day.cy$times-60*60*12)+(day.cy$h*60*60)
-day.cy$ht <- -cos((((day.cy$h-3)%%24)/24)*2*pi)
+day.cy$ht <- -cos((((day.cy$h-3)%%24)/24)*1*pi)
 # hist(day.cy$ht)
 day.cy$sst_noaa_day_mean_h <- day.cy$sst_noaa_day_mean+(day.cy$ht)
 day.cy <- day.cy[order(day.cy$times),]
@@ -508,6 +513,28 @@ points(day.cy$sst_noaa_day_mean_h~day.cy$times,
 # axis.POSIXct(1, at=seq(as.POSIXct("2015-06-09 12:00", tz = "UTC"), by = "12 hour", length.out = 4*20), labels= FALSE, cex = 0.5)
 axis.POSIXct(1, at=seq(as.POSIXct("2015-06-09 00:00", tz = "UTC"), by = "day", length.out = 4*20), labels= TRUE)
 # ?axis.POSIXct
+
+
+
+# Adding key
+legend(x = as.POSIXct("2015-06-10 00:00", tz = "UTC"), y = 18,
+       legend = c(
+         "Remote sensed SST (daily)",
+         "Dive bout SST (TDR)",
+         "Daily SST fluctuation (estimate)"),
+       col = c("red", "black", "red"),
+       # pt.bg = c(NA, NA, "dark grey"),
+       lty = c(2, NA, 1),
+       lwd = c(2, NA, 1),
+       # pt.lwd = c(1,1,1,1,1),
+       # bg = c("black", "grey"),
+       pch = c(1, 1, NA),
+       y.intersp = 0.9,
+       seg.len = 2,
+       cex = 0.8
+)
+
+
 dev.off()
 
 
